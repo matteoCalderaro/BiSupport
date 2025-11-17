@@ -1,29 +1,87 @@
 
+// --- START: Custom Scroll Height Logic ---
+
+function getElementHeight(element) {
+    if (!element) {
+        return 0;
+    }
+    const style = window.getComputedStyle(element);
+    let height = parseFloat(style.height) || 0;
+    height += parseFloat(style.marginTop) || 0;
+    height += parseFloat(style.marginBottom) || 0;
+    height += parseFloat(style.borderTopWidth) || 0;
+    height += parseFloat(style.borderBottomWidth) || 0;
+    return height;
+}
+
+function getElementSpacing(element) {
+    if (!element) {
+        return 0;
+    }
+    const style = window.getComputedStyle(element);
+    let spacing = 0;
+    spacing += parseFloat(style.marginTop) || 0;
+    spacing += parseFloat(style.marginBottom) || 0;
+    spacing += parseFloat(style.paddingTop) || 0;
+    spacing += parseFloat(style.paddingBottom) || 0;
+    spacing += parseFloat(style.borderTopWidth) || 0;
+    spacing += parseFloat(style.borderBottomWidth) || 0;
+    return spacing;
+}
+
+function updateChatScrollHeight() {
+    const scrollElement = document.querySelector('.scroll-y');
+    if (!scrollElement) {
+        return;
+    }
+
+    const dependenciesSelector = scrollElement.getAttribute('data-kt-scroll-dependencies');
+    const wrappersSelector = scrollElement.getAttribute('data-kt-scroll-wrappers');
+    const offsetValue = scrollElement.getAttribute('data-kt-scroll-offset') || '0px';
+
+    let height = window.innerHeight;
+
+    // Subtract height of dependencies
+    if (dependenciesSelector) {
+        const dependencyElements = document.querySelectorAll(dependenciesSelector);
+        dependencyElements.forEach(element => {
+            if (element.offsetParent !== null) { // is visible
+                height -= getElementHeight(element);
+            }
+        });
+    }
+
+    // Subtract spacing of wrappers
+    if (wrappersSelector) {
+        const wrapperElements = document.querySelectorAll(wrappersSelector);
+        wrapperElements.forEach(element => {
+            if (element.offsetParent !== null) { // is visible
+                height -= getElementSpacing(element);
+            }
+        });
+    }
+    
+    // Subtract own spacing
+    height -= getElementSpacing(scrollElement);
+
+    // Subtract offset
+    height -= parseFloat(offsetValue);
+
+    scrollElement.style.height = height + 'px';
+}
+
+// --- END: Custom Scroll Height Logic ---
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Chat script loaded');
 
     const toggleButton = document.querySelector('#kt_drawer_chat_toggle');
-    const drawer = document.querySelector('#kt_drawer_chat');
-    const closeButton = document.querySelector('#kt_drawer_chat_close');
+    const drawer = document.querySelector('.drawer');
     let overlay = null;
 
-    if (!toggleButton) {
-        console.error('Toggle button #kt_drawer_chat_toggle not found');
+    if (!toggleButton || !drawer) {
+        console.error('Required drawer elements not found. Aborting script execution.');
         return;
-    }
-
-    if (!drawer) {
-        console.error('Drawer #kt_drawer_chat not found');
-        return;
-    }
-
-    // --- Initial Setup ---
-    if (drawer.getAttribute('data-kt-drawer-activate') === 'true') {
-        const direction = drawer.getAttribute('data-kt-drawer-direction');
-        drawer.classList.add('drawer');
-        if (direction) {
-            drawer.classList.add('drawer-' + direction);
-        }
     }
 
     const showDrawer = () => {
@@ -34,19 +92,12 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay = document.createElement('div');
         overlay.classList.add('drawer-overlay');
         
-        const drawerZIndex = window.getComputedStyle(drawer).zIndex;
-        overlay.style.zIndex = String(parseInt(drawerZIndex) - 1);
-        
         document.body.appendChild(overlay);
         overlay.addEventListener('click', hideDrawer);
 
         // Set attributes and classes for drawer visibility
-        document.body.setAttribute('data-kt-drawer-chat', 'on');
-        document.body.setAttribute('data-kt-drawer', 'on');
         drawer.classList.add('drawer-on');
-        if (toggleButton) {
-            toggleButton.classList.add('active');
-        }
+        toggleButton.classList.add('active');
         console.log('Drawer shown');
     };
 
@@ -61,12 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Remove attributes and classes
-        document.body.removeAttribute('data-kt-drawer-chat');
-        document.body.removeAttribute('data-kt-drawer');
         drawer.classList.remove('drawer-on');
-        if (toggleButton) {
-            toggleButton.classList.remove('active');
-        }
+        toggleButton.classList.remove('active');
         console.log('Drawer hidden');
     };
 
@@ -87,15 +134,6 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleDrawer();
     });
 
-    if (closeButton) {
-        closeButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            hideDrawer();
-        });
-    } else {
-        console.warn('Close button #kt_drawer_chat_close not found');
-    }
-
     // Close drawer on 'Escape' key press
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
@@ -105,5 +143,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     showDrawer();
+
+    // --- Additions for scroll height ---
+    updateChatScrollHeight();
+    window.addEventListener('resize', updateChatScrollHeight);
 });
 

@@ -44,7 +44,7 @@ body{
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: rgb(190, 94, 94);
+    background-color: rgb(255, 255, 255);
 }
 
 #kt_drawer_chat_messenger {
@@ -65,11 +65,11 @@ body{
     scrollbar-color: var(--color-light-gray) transparent !important;
 }
 
+
 /*****************
     DRAWER
 *****************/
 .drawer {
-   
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Generic shadow */
     transition: transform 0.3s ease-in-out;
     z-index: 1050; /* Needs to be above other content */
@@ -94,6 +94,9 @@ body{
     background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
     z-index: 1040; /* Below the drawer */
 }
+/*****************
+    DRAWER END
+*****************/
 
 
 
