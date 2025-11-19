@@ -53,8 +53,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendButton = chatCard.querySelector('[data-kt-element="send"]');
         
         setupEventListeners(textarea, sendButton, messages);
+
+        // Genera il messaggio di benvenuto del bot all'avvio
+        const welcomeMessage = "Ciao, sono il tuo consulente BI. Come posso aiutarti?";
+        const welcomeMessageHtml = createIncomingMessageHTML(welcomeMessage);
+        messages.insertAdjacentHTML('beforeend', welcomeMessageHtml);
+        messages.scrollTop = messages.scrollHeight;
     }
 });
+
+
+// Funzione helper per formattare il timestamp
+const formatTimestamp = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
 
 // Funzioni per creare l'HTML dei messaggi
 const createOutgoingMessageHTML = (message) => `
@@ -62,7 +77,7 @@ const createOutgoingMessageHTML = (message) => `
         <div class="d-flex flex-column align-items-end">
             <div class="d-flex align-items-center mb-2">
                 <div class="me-3">
-                    <span class="text-muted fs-7 mb-1">Just now</span>
+                    <span class="text-muted fs-7 mb-1">${formatTimestamp()}</span>
                     <span class="fs-5 fw-bold text-primary ms-1">You</span>
                 </div>
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-message-out text-primary fw-bold" style="width: 35px; height: 35px;">
@@ -83,10 +98,11 @@ const createIncomingMessageHTML = (message) => `
                 </div>
                 <div class="ms-3">
                     <span class="fs-5 fw-bold text-primary me-1">BiSupport</span>
-                    <span class="text-muted fs-7 mb-1">Just now</span>
+                    <span class="text-muted fs-7 mb-1">${formatTimestamp()}</span>
                 </div>
             </div>
             <div class="p-5 rounded bg-message-in text-gray-900 fw-semibold mw-lg-400px text-start">${message}</div>
         </div>
     </div>
 `;
+
