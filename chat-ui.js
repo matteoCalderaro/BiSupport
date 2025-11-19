@@ -1,58 +1,62 @@
-"use strict";
+/**
+ * @file chat-ui.js
+ * @description Gestisce l'interfaccia utente della chat, gli eventi e il rendering dei messaggi.
+ */
 
-const handeSend = (element) => {
-    if (!element) {
+import { getBotResponse } from './chat-service.js';
+
+const setupEventListeners = (textarea, sendButton, messages) => {
+    if (!textarea || !sendButton || !messages) {
+        console.error("Elementi della chat non trovati. Impossibile inizializzare.");
         return;
     }
 
-    const input = element.querySelector('[data-kt-element="input"]'); // textarea
-    const sendButton = element.querySelector('[data-kt-element="send"]'); // button
+    const handleUserMessage = () => {
+        const messageText = textarea.value.trim();
+        if (messageText.length > 0) {
+            handleMessaging(messages, textarea, messageText);
+        }
+    };
 
-    if (input) {
-        input.addEventListener('keydown', (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                handeMessaging(element);
-            }
-        });
-    }
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleUserMessage();
+        }
+    });
 
-    if (sendButton) {
-        sendButton.addEventListener('click', () => {
-            handeMessaging(element);
-        });
-    }
+    sendButton.addEventListener('click', handleUserMessage);
 };
 
-const handeMessaging = (element) => {
-    const messages = element.querySelector('#chat_messages'); // div container
-    const input = element.querySelector('[data-kt-element="input"]');
-    const messageText = input.value;
-
-    if (messageText.length === 0) {
-        return;
-    }
-
+const handleMessaging = async (messages, textarea, messageText) => {
+    // 1. Mostra il messaggio dell'utente
     const outgoingMessageHtml = createOutgoingMessageHTML(messageText);
     messages.insertAdjacentHTML('beforeend', outgoingMessageHtml);
     messages.scrollTop = messages.scrollHeight;
-    input.value = '';
+    textarea.value = '';
+    textarea.focus();
 
-    setTimeout(() => {
-        const incomingMessageHtml = createIncomingMessageHTML('Thank you for your awesome support!');
-        messages.insertAdjacentHTML('beforeend', incomingMessageHtml);
-        messages.scrollTop = messages.scrollHeight;
-    }, 2000);
+    // 2. Ottieni la risposta del bot dal service layer
+    const botMessage = await getBotResponse(messageText);
+
+    // 3. Mostra la risposta del bot
+    const incomingMessageHtml = createIncomingMessageHTML(botMessage);
+    messages.insertAdjacentHTML('beforeend', incomingMessageHtml);
+    messages.scrollTop = messages.scrollHeight;
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const chatMessenger = document.querySelector('#chat_card');
-    if (chatMessenger) {
-        handeSend(chatMessenger);
+    const chatCard = document.querySelector('#chat_card');
+    if (chatCard) {
+        const messages = chatCard.querySelector('#chat_messages');
+        const textarea = chatCard.querySelector('[data-kt-element="input"]');
+        const sendButton = chatCard.querySelector('[data-kt-element="send"]');
+        
+        setupEventListeners(textarea, sendButton, messages);
     }
 });
 
-// Global message creation functions
+// Funzioni per creare l'HTML dei messaggi
 const createOutgoingMessageHTML = (message) => `
     <div class="d-flex justify-content-end mb-10">
         <div class="d-flex flex-column align-items-end">
