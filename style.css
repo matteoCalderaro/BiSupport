@@ -101,13 +101,13 @@ body{
 
 #chat_card-body {
     flex-grow: 1;
-    overflow-y: auto;
     padding: 2rem 2.25rem;
+    min-height: 0;
 }
 
 #chat_messages {
     overflow-y: scroll;
-    position: relative;
+    height: 100%;
     scrollbar-width: thin;
     scrollbar-color: var(--color-light-gray) transparent !important;
 }
@@ -119,46 +119,16 @@ body{
 
 
 
-/**/
-.badge {
-    display: inline-flex;
-    align-items: center; 
-}
-.badge.badge-circle, .badge.badge-square {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 1.75rem;
-    min-width: 1.75rem;
-    padding: 0 0.1rem;
-    line-height: 0;
+/**************
+  BADGE
+**************/
+
+.chat_badge {
+    display: inline-block;
+    border-radius: 50%;
     width: 10px !important;
     height: 10px !important;
-}
-.badge.badge-circle {
-    border-radius: 50%;
-    padding: 0;
-    min-width: unset;
-    width: 1.75rem;
-}
-
-.badge-success {
-    color: var(--bs-success-inverse);
     background-color: #17c653;
 }
 
-.symbol {
-    display: inline-block;
-    flex-shrink: 0;
-    position: relative;
-    border-radius: 0.475rem;
-}
-.symbol.symbol-35px > img {
-    width: 35px;
-    height: 35px;
-}
-.symbol.symbol-circle,
-.symbol.symbol-circle > img,
-.symbol.symbol-circle .symbol-label {
-    border-radius: 50%;
-}
+

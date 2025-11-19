@@ -1,74 +1,4 @@
 // ==========================================================================================
-// ChatScrollHeight: Manages the dynamic height of the chat messages container.
-// ==========================================================================================
-const ChatScrollHeight = {
-    scrollElement: null,
-    drawer: null,
-
-    init: function() {
-        this.scrollElement = document.querySelector('#chat_messages');
-        this.drawer = document.querySelector('#chat_drawer');
-
-        if (!this.scrollElement || !this.drawer) {
-            console.error('Chat scroll height elements (#chat_messages or #chat_drawer) not found.');
-            return;
-        }
-
-        this.updateScrollHeight();
-        window.addEventListener('resize', () => this.updateScrollHeight());
-    },
-
-    updateScrollHeight: function() {
-        const _parseFloat = (value) => parseFloat(value) || 0;
-
-        const getElementHeight = (element) => {
-            if (!element) return 0;
-            const style = window.getComputedStyle(element);
-            return _parseFloat(style.height) +
-                   _parseFloat(style.marginTop) +
-                   _parseFloat(style.marginBottom) +
-                   _parseFloat(style.borderTopWidth) +
-                   _parseFloat(style.borderBottomWidth);
-        };
-
-        const getElementSpacing = (element) => {
-            if (!element) return 0;
-            const style = window.getComputedStyle(element);
-            return _parseFloat(style.marginTop) +
-                   _parseFloat(style.marginBottom) +
-                   _parseFloat(style.paddingTop) +
-                   _parseFloat(style.paddingBottom) +
-                   _parseFloat(style.borderTopWidth) +
-                   _parseFloat(style.borderBottomWidth);
-        };
-
-        const dependenciesSelector = this.scrollElement.getAttribute('data-scroll-dependencies');
-        const wrappersSelector = this.scrollElement.getAttribute('data-scroll-wrappers');
-        const offsetValue = this.scrollElement.getAttribute('data-scroll-offset') || '0px';
-
-        let height = this.drawer.clientHeight;
-
-        if (dependenciesSelector) {
-            document.querySelectorAll(dependenciesSelector).forEach(element => {
-                if (element.offsetParent !== null) height -= getElementHeight(element);
-            });
-        }
-
-        if (wrappersSelector) {
-            document.querySelectorAll(wrappersSelector).forEach(element => {
-                if (element.offsetParent !== null) height -= getElementSpacing(element);
-            });
-        }
-
-        height -= getElementSpacing(this.scrollElement);
-        height -= _parseFloat(offsetValue);
-
-        this.scrollElement.style.height = height + 'px';
-    }
-};
-
-
-// ==========================================================================================
 // ChatDrawerVisibility: Manages the selective visibility (toggle) of the chat drawer.
 // ==========================================================================================
 const ChatDrawerVisibility = {
@@ -146,9 +76,7 @@ const ChatDrawerVisibility = {
 // Main Initialization
 // ==========================================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Always initialize scroll height calculation.
-    ChatScrollHeight.init();
-
+   
     // Conditionally initialize drawer visibility logic.
     // This logic is only needed if the drawer is meant to be toggleable.
     const toggleButton = document.querySelector('#chat_toggle');
