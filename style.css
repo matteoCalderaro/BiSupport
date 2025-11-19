@@ -97,6 +97,7 @@ body{
     min-height: 70px;
     padding: 0 2.25rem;
     border-bottom: 1px solid var(--color-light-gray);
+    justify-content: space-between;
 }
 
 #chat_card-body {
