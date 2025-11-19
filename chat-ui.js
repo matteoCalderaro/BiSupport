@@ -82,7 +82,7 @@ const createIncomingMessageHTML = (message) => `
                     <i class="bi bi-robot fs-3 text-primary"></i>
                 </div>
                 <div class="ms-3">
-                    <span class="fs-5 fw-bold text-primary me-1">Support</span>
+                    <span class="fs-5 fw-bold text-primary me-1">BiSupport</span>
                     <span class="text-muted fs-7 mb-1">Just now</span>
                 </div>
             </div>
