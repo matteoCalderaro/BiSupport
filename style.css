@@ -30,6 +30,7 @@ body{
 
 .text-start { text-align: left !important; }
 .text-end { text-align: right !important; }
+.text-bisup { color: #c59247 !important; }
 
 .mw-lg-400px { max-width: 400px !important; }
 
@@ -131,5 +132,3 @@ body{
     height: 10px !important;
     background-color: #17c653;
 }
-
-

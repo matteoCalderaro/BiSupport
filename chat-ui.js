@@ -94,10 +94,10 @@ const createIncomingMessageHTML = (message) => `
         <div class="d-flex flex-column align-items-start">
             <div class="d-flex align-items-center mb-2">
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-message-in" style="width: 35px; height: 35px;">
-                    <i class="bi bi-robot fs-3 text-primary"></i>
+                    <img src="./public/brain.png" alt="Bot Icon" style="width: 24px; height: 24px; margin-right: 2px;" />
                 </div>
                 <div class="ms-3">
-                    <span class="fs-5 fw-bold text-primary me-1">BiSupport</span>
+                    <span class="fs-5 fw-bold text-bisup me-1">BiSupport</span>
                     <span class="text-muted fs-7 mb-1">${formatTimestamp()}</span>
                 </div>
             </div>
