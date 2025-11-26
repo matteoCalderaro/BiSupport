@@ -1,11 +1,12 @@
 # Fase 1: Build Image
 FROM node:18-alpine AS builder
 
-# Imposta la directory di lavoro principale per l'applicazione
+# Crea la directory di lavoro principale per l'applicazione
 WORKDIR /usr/src/app
 
-# Copia la cartella server (inclusi package.json e package-lock.json)
-COPY server/ ./server/
+# Copia l'intero contenuto del progetto nella directory di lavoro del container
+# Questo include server/, client/, .env, etc.
+COPY . .
 
 # Entra nella directory del server per installare le dipendenze
 WORKDIR /usr/src/app/server
@@ -13,19 +14,14 @@ WORKDIR /usr/src/app/server
 # Installa le dipendenze di produzione (salta le devDependencies)
 RUN npm install --omit=dev
 
-# Copia la cartella client nella root dell'applicazione (al livello di /usr/src/app/)
-# Torna alla root dell'applicazione prima di copiare il client
-WORKDIR /usr/src/app
-COPY client/ ./client/
-
 
 # --- Fase 2: Immagine Finale di Produzione ---
 FROM node:18-alpine
 
-# Imposta la directory di lavoro principale per l'applicazione
+# Crea la directory di lavoro principale per l'applicazione
 WORKDIR /usr/src/app
 
-# Copia il server (inclusi codice e node_modules) dalla fase di build
+# Copia il server e i suoi node_modules dalla fase di build
 COPY --from=builder /usr/src/app/server ./server/
 
 # Copia la cartella client dalla fase di build
