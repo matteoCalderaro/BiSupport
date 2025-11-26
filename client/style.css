@@ -12,14 +12,31 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%; /* Ensure html and body take full viewport height */
+  min-height: 100vh;
+}
+
 html {
   font-size: 13px !important;
 }
 
 body{
     font-family: "Inter", sans-serif;
-    background-color: #010336;
 }
+
+/* Ensure the sidebar takes full height */
+#chat_history_sidebar {
+  height: 100%;
+}
+
+/* Ensure chat card takes full height within its flex container */
+#chat_card {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Must be 100% to fill flex parent */
+}
+
 
 .fs-4 { font-size: 1.25rem !important; }
 .fs-5 { font-size: 1.15rem !important;}
@@ -32,57 +49,14 @@ body{
 .text-end { text-align: right !important; }
 .text-bisup { color: #c59247 !important; }
 
-.mw-lg-400px { max-width: 400px !important; }
+.mw-90 { max-width: 90% !important; }
 
 
 .bg-message-in { background-color: var(--color-message-in) !important }
 .bg-message-out { background-color: var(--color-message-out) !important }
 
 
-/***********************
-    ANIMAZIONE DRAWER E OVERLAY
-*********************/
-#chat_drawer {
-    width: 500px;
-    height: 100%;
-    /* height: 600px; */
-    position: fixed;
-    top: 0;
-    display: flex;
-    flex-direction: column;
-    background-color: rgb(255, 255, 255);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease-in-out;
-    z-index: 1050;
-}
 
-
-.chat_drawer_end {
-    /******* POSIZIONE ORIGINALE ********/
-    /* right: 0;
-    transform: translateX(100%); */
-    /******** POSIZIONE AL CENTRO ********/
-    left: 50%; 
-    transform: translateX(calc(50vw + 50%));
-}
-
-.chat_drawer_on.chat_drawer_end {
-    /******** POSIZIONE ORIGINALE ********/
-    /* transform: translateX(0);   */
-    /********* POSIZIONE AL CENTRO ********/
-    transform: translateX(-50%);
-}
-
-
-#chat_overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.2);
-    z-index: 100;
-}
 
 /****************************************************
     CARD E SROLL (applicato a #chat_messages)
