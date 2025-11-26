@@ -5,7 +5,7 @@ const path = require('path');
 
 let db;
 
-function initializeDatabase() {
+async function initializeDatabase() { // Funzione resa async
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (isProduction) {
@@ -30,10 +30,10 @@ function initializeDatabase() {
   }
 
   // Creazione delle tabelle (se non esistono)
-  createTables(db, isProduction);
+  await createTables(db, isProduction); // await qui
 }
 
-function createTables(databaseInstance, isProduction) {
+async function createTables(databaseInstance, isProduction) { // Funzione resa async
   let createConversationsTableSQL;
   let createMessagesTableSQL;
 
@@ -79,8 +79,8 @@ function createTables(databaseInstance, isProduction) {
 
   try {
     if (isProduction) {
-      databaseInstance.query(createConversationsTableSQL);
-      databaseInstance.query(createMessagesTableSQL);
+      await databaseInstance.query(createConversationsTableSQL); // await qui
+      await databaseInstance.query(createMessagesTableSQL);      // await qui
     } else {
       databaseInstance.exec(createConversationsTableSQL);
       databaseInstance.exec(createMessagesTableSQL);
