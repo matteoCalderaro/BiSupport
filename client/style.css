@@ -28,6 +28,7 @@ body{
 /* Ensure the sidebar takes full height */
 #chat_history_sidebar {
   height: 100%;
+  flex-shrink: 0; /* Impedisce alla sidebar di restringersi */
 }
 
 /* Ensure chat card takes full height within its flex container */
@@ -88,6 +89,7 @@ body{
     scrollbar-color: var(--color-light-gray) transparent !important;
 }
 
+
 #chat_card-footer {
     padding: 2rem 2.25rem;
     border-top: 1px solid var(--color-light-gray);
@@ -106,3 +108,49 @@ body{
     height: 10px !important;
     background-color: #17c653;
 }
+
+/* Hide conversation actions by default */
+.conversation-item .conversation-actions {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s, opacity 0.3s linear;
+}
+
+/* Show conversation actions on hover, or when its dropdown is expanded, or when the item is active */
+.conversation-item:hover .conversation-actions,
+.conversation-item.dropdown-expanded .conversation-actions,
+.conversation-item.is-active-conversation .conversation-actions {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Rimuove la freccia del dropdown di Bootstrap accanto ai tre puntini */
+.conversation-item .dropdown-toggle::after {
+    display: none !important;
+}
+
+/****************************************************
+    Stile item della lista conversazioni
+*****************************************************/
+
+/* Effetto hover per gli item non attivi */
+.conversation-item:not(.is-active-conversation):hover {
+    background-color: var(--color-light-gray) !important;
+}
+
+/* Stile per l'item attivo */
+.conversation-item.is-active-conversation {
+    background-color: var(--color-message-out) !important;
+    box-shadow: inset 3px 0 0 0 #0d6efd; /* Simula un bordo sinistro senza alterare il layout */
+}
+
+/* Colora il titolo della conversazione attiva */
+.conversation-item.is-active-conversation .fw-bold {
+    color: #0d6efd !important;
+}
+
+/* Diminuisce la dimensione del font per la data dell'elemento conversazione */
+.conversation-item .fs-7.text-muted {
+    font-size: 0.8rem !important;
+}
+
