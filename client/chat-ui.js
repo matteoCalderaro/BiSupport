@@ -51,7 +51,7 @@ const renderConversationsList = () => {
                     <button class="btn btn-sm btn-icon btn-flush dropdown-toggle" type="button" aria-expanded="false" title="Opzioni conversazione">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-start">
                         <li><a class="dropdown-item rename-btn" href="#"><i class="bi bi-pencil me-2"></i>Rinomina</a></li>
                         <li><a class="dropdown-item text-danger delete-btn" href="#"><i class="bi bi-trash me-2"></i>Elimina</a></li>
                     </ul>
@@ -63,7 +63,12 @@ const renderConversationsList = () => {
     // 2. Attach listeners and initialize components after rendering
     DOM.conversationsList.querySelectorAll('.conversation-item').forEach(item => {
         const dropdownButton = item.querySelector('.dropdown-toggle');
-        if (!dropdownButton) return;
+        const dropdownMenuElement = item.querySelector('.dropdown-menu'); // Get the ul.dropdown-menu
+        if (!dropdownButton || !dropdownMenuElement) return;
+
+        // Store original parent of the dropdown menu for later
+        dropdownButton._originalDropdownMenuParent = dropdownMenuElement.parentNode;
+        dropdownButton._dropdownMenuElement = dropdownMenuElement; // Store menu element itself
 
         // Manually initialize dropdown with container: 'body' to solve positioning issues
         const dropdownInstance = new bootstrap.Dropdown(dropdownButton, {
@@ -81,11 +86,58 @@ const renderConversationsList = () => {
                 }
             });
             item.classList.add('dropdown-expanded');
+
+            // --- MANUAL DOM MANIPULATION FOR POSITIONING ---
+            // Remove from original parent and append to body
+            const originalParent = dropdownButton._originalDropdownMenuParent;
+            const menuElement = dropdownButton._dropdownMenuElement;
+            if (menuElement && originalParent && originalParent.contains(menuElement)) { // Check if it's still in original parent
+                originalParent.removeChild(menuElement);
+                document.body.appendChild(menuElement);
+            }
+            // ------------------------------------------------
         });
 
         dropdownButton.addEventListener('hide.bs.dropdown', () => {
             item.classList.remove('dropdown-expanded');
+
+            // --- MANUAL DOM MANIPULATION FOR POSITIONING ---
+            // Move menu back to original parent
+            const originalParent = dropdownButton._originalDropdownMenuParent;
+            const menuElement = dropdownButton._dropdownMenuElement;
+            if (menuElement && originalParent && document.body.contains(menuElement)) { // Check if it's currently in body
+                document.body.removeChild(menuElement);
+                originalParent.appendChild(menuElement);
+            }
+            // ------------------------------------------------
         });
+        
+        // --- NEW: Attach direct listeners to rename/delete buttons ---
+        const renameButton = dropdownMenuElement.querySelector('.rename-btn');
+        const deleteButton = dropdownMenuElement.querySelector('.delete-btn');
+
+        if (renameButton) {
+            renameButton.addEventListener('click', (e) => {
+                closeAllOpenDropdowns();
+                e.preventDefault();
+                e.stopPropagation();
+                const conversationId = item.dataset.conversationId;
+                const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
+                handleRenameConversation(conversationId, conversationTitle);
+            });
+        }
+        if (deleteButton) {
+            deleteButton.addEventListener('click', (e) => {
+                closeAllOpenDropdowns();
+                e.preventDefault();
+                e.stopPropagation();
+                const conversationId = item.dataset.conversationId;
+                const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
+                handleDeleteConversation(conversationId);
+            });
+        }
+        // --- END NEW ---
+
     });
 };
 
@@ -185,10 +237,24 @@ const handleRenameConversation = async (conversationId, currentTitle) => {
     // Implementazione futura con SweetAlert2 input e chiamata API backend
 };
 
+const closeAllOpenDropdowns = () => {
+    const expandedItems = DOM.conversationsList.querySelectorAll('.dropdown-expanded');
+    expandedItems.forEach(item => {
+        const dropdownButton = item.querySelector('.dropdown-toggle');
+        if (dropdownButton) {
+            const instance = bootstrap.Dropdown.getInstance(dropdownButton);
+            if (instance) {
+                instance.hide(); // This will trigger our hide.bs.dropdown listener
+            }
+        }
+    });
+};
 
 const selectConversation = async (conversationId) => {
     if (AppState.isLoading) return;
     setLoadingState(true);
+
+    closeAllOpenDropdowns(); // <-- NEW: Close any open dropdowns before re-rendering
 
     AppState.activeConversationId = conversationId;
     AppState.activeMessages = []; 
@@ -207,6 +273,9 @@ const selectConversation = async (conversationId) => {
 
 const handleNewChat = () => {
     if (AppState.isLoading) return;
+    
+    closeAllOpenDropdowns(); // <-- NEW: Close any open dropdowns before re-rendering
+
     AppState.activeConversationId = null;
     AppState.activeMessages = [];
     renderMessages();
@@ -262,28 +331,12 @@ const setupConversationListClickListener = () => {
         const conversationId = item.dataset.conversationId;
         const conversationTitle = item.querySelector('.fw-bold.text-truncate')?.title;
 
-        // Case 1: Clicked on a rename button
-        if (e.target.closest('.rename-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-            handleRenameConversation(conversationId, conversationTitle);
-            return;
-        }
-
-        // Case 2: Clicked on a delete button
-        if (e.target.closest('.delete-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-            handleDeleteConversation(conversationId);
-            return;
-        }
-
         // Case 3: Clicked on the dropdown toggle button
-        const dropdownToggle = e.target.closest('.dropdown-toggle');
-        if (dropdownToggle) {
+        const dropdownToggleElement = e.target.closest('.dropdown-toggle');
+        if (dropdownToggleElement) {
             e.stopPropagation();
             // Manually get the instance (which was created on render) and toggle it.
-            const instance = bootstrap.Dropdown.getInstance(dropdownToggle);
+            const instance = bootstrap.Dropdown.getInstance(dropdownToggleElement);
             if (instance) {
                 instance.toggle();
             }
@@ -294,6 +347,15 @@ const setupConversationListClickListener = () => {
         if (!item.classList.contains('is-active-conversation')) {
             selectConversation(conversationId);
         }
+    });
+};
+
+const setupGlobalDropdownCloser = () => {
+    document.addEventListener('click', (e) => {
+
+
+
+        closeAllOpenDropdowns();
     });
 };
 
@@ -312,7 +374,9 @@ const setupEventListeners = () => {
     DOM.newChatButton.addEventListener('click', handleNewChat);
 
     setupConversationListClickListener(); // Setup the delegated listener
+    setupGlobalDropdownCloser(); // NEW: Setup global dropdown closer
 };
+
 
 // --- Inizializzazione App ---
 const initApp = async () => {

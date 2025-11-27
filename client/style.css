@@ -154,3 +154,12 @@ body{
     font-size: 0.8rem !important;
 }
 
+/*
+  Forza l'allineamento a sinistra del dropdown menu per risolvere conflitti.
+*/
+.conversation-item .conversation-actions .dropdown-menu.dropdown-menu-start {
+    left: 0 !important;
+    right: auto !important;
+    transform: none !important; 
+}
+
