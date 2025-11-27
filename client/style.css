@@ -140,8 +140,8 @@ body{
 
 /* Stile per l'item attivo */
 .conversation-item.is-active-conversation {
-    background-color: var(--color-message-out) !important;
-    box-shadow: inset 3px 0 0 0 #0d6efd; /* Simula un bordo sinistro senza alterare il layout */
+    background-color: var(--color-light-gray) !important;
+    box-shadow: inset 2px 0 0 0 #0d6efd; /* Simula un bordo sinistro senza alterare il layout */
 }
 
 /* Colora il titolo della conversazione attiva */
@@ -154,12 +154,5 @@ body{
     font-size: 0.8rem !important;
 }
 
-/*
-  Forza l'allineamento a sinistra del dropdown menu per risolvere conflitti.
-*/
-.conversation-item .conversation-actions .dropdown-menu.dropdown-menu-start {
-    left: 0 !important;
-    right: auto !important;
-    transform: none !important; 
-}
+
 
