@@ -27,6 +27,85 @@ const cacheDOMElements = () => {
     return true;
 };
 
+// --- Funzioni di Utilità per Dropdown Conversazioni ---
+const setupConversationItemDropdown = (item) => {
+    const dropdownButton = item.querySelector('.dropdown-toggle');
+    const dropdownMenuElement = item.querySelector('.dropdown-menu');
+    if (!dropdownButton || !dropdownMenuElement) return;
+
+    // Store original parent of the dropdown menu for later
+    dropdownButton._originalDropdownMenuParent = dropdownMenuElement.parentNode;
+    dropdownButton._dropdownMenuElement = dropdownMenuElement; // Store menu element itself
+
+    // Manually initialize dropdown with container: 'body' to solve positioning issues
+    new bootstrap.Dropdown(dropdownButton, {
+        container: 'body'
+    });
+
+    // Dropdown freeze logic (positioning and hiding other dropdowns)
+    dropdownButton.addEventListener('show.bs.dropdown', () => {
+        // Hide any other open dropdowns
+        const allDropdownButtons = DOM.conversationsList.querySelectorAll('.dropdown-toggle');
+        allDropdownButtons.forEach(btn => {
+            if (btn !== dropdownButton) {
+                const instance = bootstrap.Dropdown.getInstance(btn);
+                if (instance) instance.hide();
+            }
+        });
+        item.classList.add('dropdown-expanded');
+
+        // --- MANUAL DOM MANIPULATION FOR POSITIONING ---
+        // Remove from original parent and append to body
+        const originalParent = dropdownButton._originalDropdownMenuParent;
+        const menuElement = dropdownButton._dropdownMenuElement;
+        if (menuElement && originalParent && originalParent.contains(menuElement)) { // Check if it's still in original parent
+            originalParent.removeChild(menuElement);
+            document.body.appendChild(menuElement);
+        }
+        // ------------------------------------------------
+    });
+
+    dropdownButton.addEventListener('hide.bs.dropdown', () => {
+        item.classList.remove('dropdown-expanded');
+
+        // --- MANUAL DOM MANIPULATION FOR POSITIONING ---
+        // Move menu back to original parent
+        const originalParent = dropdownButton._originalDropdownMenuParent;
+        const menuElement = dropdownButton._dropdownMenuElement;
+        if (menuElement && originalParent && document.body.contains(menuElement)) { // Check if it's currently in body
+            document.body.removeChild(menuElement);
+            originalParent.appendChild(menuElement);
+        }
+        // ------------------------------------------------
+    });
+};
+
+const attachConversationActionListeners = (item, dropdownMenuElement) => {
+    const renameButton = dropdownMenuElement.querySelector('.rename-btn');
+    const deleteButton = dropdownMenuElement.querySelector('.delete-btn');
+
+    if (renameButton) {
+        renameButton.addEventListener('click', (e) => {
+            closeAllOpenDropdowns();
+            e.preventDefault();
+            e.stopPropagation();
+            const conversationId = item.dataset.conversationId;
+            const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
+            handleRenameConversation(conversationId, conversationTitle);
+        });
+    }
+    if (deleteButton) {
+        deleteButton.addEventListener('click', (e) => {
+            closeAllOpenDropdowns();
+            e.preventDefault();
+            e.stopPropagation();
+            const conversationId = item.dataset.conversationId;
+            const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
+            handleDeleteConversation(conversationId);
+        });
+    }
+};
+
 // --- Funzioni di Rendering ---
 const renderConversationsList = () => {
     if (!DOM.conversationsList) return;
@@ -62,81 +141,8 @@ const renderConversationsList = () => {
 
     // 2. Attach listeners and initialize components after rendering
     DOM.conversationsList.querySelectorAll('.conversation-item').forEach(item => {
-        const dropdownButton = item.querySelector('.dropdown-toggle');
-        const dropdownMenuElement = item.querySelector('.dropdown-menu'); // Get the ul.dropdown-menu
-        if (!dropdownButton || !dropdownMenuElement) return;
-
-        // Store original parent of the dropdown menu for later
-        dropdownButton._originalDropdownMenuParent = dropdownMenuElement.parentNode;
-        dropdownButton._dropdownMenuElement = dropdownMenuElement; // Store menu element itself
-
-        // Manually initialize dropdown with container: 'body' to solve positioning issues
-        const dropdownInstance = new bootstrap.Dropdown(dropdownButton, {
-            container: 'body'
-        });
-
-        // Dropdown freeze logic
-        dropdownButton.addEventListener('show.bs.dropdown', () => {
-            // Hide any other open dropdowns
-            const allDropdownButtons = DOM.conversationsList.querySelectorAll('.dropdown-toggle');
-            allDropdownButtons.forEach(btn => {
-                if (btn !== dropdownButton) {
-                    const instance = bootstrap.Dropdown.getInstance(btn);
-                    if (instance) instance.hide();
-                }
-            });
-            item.classList.add('dropdown-expanded');
-
-            // --- MANUAL DOM MANIPULATION FOR POSITIONING ---
-            // Remove from original parent and append to body
-            const originalParent = dropdownButton._originalDropdownMenuParent;
-            const menuElement = dropdownButton._dropdownMenuElement;
-            if (menuElement && originalParent && originalParent.contains(menuElement)) { // Check if it's still in original parent
-                originalParent.removeChild(menuElement);
-                document.body.appendChild(menuElement);
-            }
-            // ------------------------------------------------
-        });
-
-        dropdownButton.addEventListener('hide.bs.dropdown', () => {
-            item.classList.remove('dropdown-expanded');
-
-            // --- MANUAL DOM MANIPULATION FOR POSITIONING ---
-            // Move menu back to original parent
-            const originalParent = dropdownButton._originalDropdownMenuParent;
-            const menuElement = dropdownButton._dropdownMenuElement;
-            if (menuElement && originalParent && document.body.contains(menuElement)) { // Check if it's currently in body
-                document.body.removeChild(menuElement);
-                originalParent.appendChild(menuElement);
-            }
-            // ------------------------------------------------
-        });
-        
-        // --- NEW: Attach direct listeners to rename/delete buttons ---
-        const renameButton = dropdownMenuElement.querySelector('.rename-btn');
-        const deleteButton = dropdownMenuElement.querySelector('.delete-btn');
-
-        if (renameButton) {
-            renameButton.addEventListener('click', (e) => {
-                closeAllOpenDropdowns();
-                e.preventDefault();
-                e.stopPropagation();
-                const conversationId = item.dataset.conversationId;
-                const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
-                handleRenameConversation(conversationId, conversationTitle);
-            });
-        }
-        if (deleteButton) {
-            deleteButton.addEventListener('click', (e) => {
-                closeAllOpenDropdowns();
-                e.preventDefault();
-                e.stopPropagation();
-                const conversationId = item.dataset.conversationId;
-                const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
-                handleDeleteConversation(conversationId);
-            });
-        }
-        // --- END NEW ---
+        setupConversationItemDropdown(item);
+        attachConversationActionListeners(item, item.querySelector('.dropdown-menu'));
 
     });
 };
@@ -352,9 +358,6 @@ const setupConversationListClickListener = () => {
 
 const setupGlobalDropdownCloser = () => {
     document.addEventListener('click', (e) => {
-
-
-
         closeAllOpenDropdowns();
     });
 };
