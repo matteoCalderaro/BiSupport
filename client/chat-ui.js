@@ -92,7 +92,8 @@ const attachConversationActionListeners = (item, dropdownMenuElement) => {
             e.preventDefault();
             e.stopPropagation();
             const conversationId = item.dataset.conversationId;
-            const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
+            const titleElement = item.querySelector('.fw-semibold.text-truncate');
+            const conversationTitle = titleElement ? titleElement.title : ''; // Safely get title, default to empty string
             handleRenameConversation(conversationId, conversationTitle);
         });
     }
@@ -102,7 +103,8 @@ const attachConversationActionListeners = (item, dropdownMenuElement) => {
             e.preventDefault();
             e.stopPropagation();
             const conversationId = item.dataset.conversationId;
-            const conversationTitle = item.querySelector('.fw-bold.text-truncate').title; // Get title from item
+            const titleElement = item.querySelector('.fw-semibold.text-truncate');
+            const conversationTitle = titleElement ? titleElement.title : ''; // Safely get title, default to empty string
             handleDeleteConversation(conversationId);
         });
     }
