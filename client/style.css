@@ -76,13 +76,13 @@ body{
     justify-content: space-between;
 }
 
-#chat_card-body {
+.chat_card-body {
     flex-grow: 1;
     padding: 2rem 2.25rem;
     min-height: 0;
 }
 
-#chat_messages {
+.chat_messages {
     overflow-y: scroll;
     height: 100%;
     scrollbar-width: thin;
@@ -134,25 +134,56 @@ body{
 *****************************************************/
 
 /* Effetto hover per gli item non attivi */
+#new_chat_button:hover,
 .conversation-item:not(.is-active-conversation):hover {
     background-color: var(--color-light-gray) !important;
 }
 
 /* Stile per l'item attivo */
+
 .conversation-item.is-active-conversation {
     background-color: var(--color-light-gray) !important;
-    box-shadow: inset 2px 0 0 0 #0d6efd; /* Simula un bordo sinistro senza alterare il layout */
+    /* box-shadow: inset 2px 0 0 0 #0d6efd; */
 }
 
 /* Colora il titolo della conversazione attiva */
-.conversation-item.is-active-conversation .fw-bold {
+/* .conversation-item.is-active-conversation .fw-bold {
     color: #0d6efd !important;
-}
+} */
 
 /* Diminuisce la dimensione del font per la data dell'elemento conversazione */
 .conversation-item .fs-7.text-muted {
     font-size: 0.8rem !important;
 }
+
+
+#new_chat_button,
+.toggle_conversations_container {
+  cursor: pointer;
+}
+
+.open .bi-caret-right {
+    transform: rotate(90deg); /* Rotate 90 degrees as caret-right is horizontal */
+    transition: transform 0.3s ease; /* Smooth transition */
+    display: inline-block;
+}
+
+/* Transizioni per la lista delle conversazioni */
+.conversation_container {
+    max-height: 0; /* Altezza iniziale nascosta */
+    opacity: 0; /* Completamente trasparente */
+    overflow: hidden; /* Nasconde il contenuto che eccede la max-height */
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out; /* Durata della transizione */
+}
+
+.conversation_container.expanded {
+    max-height: 100vh; /* Usa un valore molto grande per consentire a flex-grow-1 di dominare, e permette la transizione da 0 */
+    opacity: 1; /* Completamente visibile */
+}
+
+
+
+  
 
 
 

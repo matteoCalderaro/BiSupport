@@ -24,6 +24,8 @@ const cacheDOMElements = () => {
     DOM.sendButton = DOM.chatCard.querySelector('[data-kt-element="send"]');
     DOM.newChatButton = document.querySelector('#new_chat_button');
     DOM.conversationsList = document.querySelector('#conversations_list');
+    DOM.toggleConversationsContainer = document.querySelector('.toggle_conversations_container');
+    DOM.conversationContainer = document.querySelector('.conversation_container');
     return true;
 };
 
@@ -145,6 +147,9 @@ const renderConversationsList = () => {
         attachConversationActionListeners(item, item.querySelector('.dropdown-menu'));
 
     });
+    setTimeout(() => { // Introduce a small delay to ensure DOM is rendered and scrollHeight is calculated
+        DOM.conversationsList.scrollTop = 0; // Scroll to TOP
+    }, 0);
 };
 
 const renderMessages = () => {
@@ -375,6 +380,16 @@ const setupEventListeners = () => {
     });
 
     DOM.newChatButton.addEventListener('click', handleNewChat);
+
+    if (DOM.toggleConversationsContainer && DOM.conversationContainer) { // Ensure elements exist
+        DOM.toggleConversationsContainer.addEventListener('click', () => {
+            DOM.conversationContainer.classList.toggle('expanded'); // Toggle 'expanded' instead of 'd-none'
+            DOM.toggleConversationsContainer.classList.toggle('open');
+            setTimeout(() => { // Ensure DOM is stable before scrolling
+                DOM.conversationsList.scrollTop = 0; // Scroll to TOP
+            }, 0);
+        });
+    }
 
     setupConversationListClickListener(); // Setup the delegated listener
     setupGlobalDropdownCloser(); // NEW: Setup global dropdown closer
