@@ -168,7 +168,10 @@ body{
     display: inline-block;
 }
 
-/* Transizioni per la lista delle conversazioni */
+
+/****************************************************
+    Transizioni per la lista delle conversazioni
+*****************************************************/
 .conversation_container {
     max-height: 0; /* Altezza iniziale nascosta */
     opacity: 0; /* Completamente trasparente */
@@ -182,6 +185,18 @@ body{
 }
 
 
+
+/****************************************************
+    Bottoni e dropdown per la lista delle conversazioni
+*****************************************************/
+
+.conversation-actions .btn {
+  border: none !important;
+  background-color: #ffff !important;
+}
+.dropdown-menu {
+  border: 1px solid #dedede;
+}
 
   
 
