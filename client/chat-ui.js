@@ -108,6 +108,12 @@ const attachConversationActionListeners = (item, dropdownMenuElement) => {
     }
 };
 
+// Funzione helper per capitalizzare la prima lettera di una stringa
+const capitalizeFirstLetter = (string) => {
+    if (!string) return '';
+    return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
 // --- Funzioni di Rendering ---
 const renderConversationsList = () => {
     if (!DOM.conversationsList) return;
@@ -126,7 +132,7 @@ const renderConversationsList = () => {
             <div class="${itemClasses}" data-conversation-id="${conv.id}" ${!isActive ? 'style="cursor: pointer;"' : ''}>
                 <div class="flex-grow-1 overflow-hidden me-2">
                     <div class="fs-7 text-muted" style="line-height: 1; margin-bottom: 0.1rem;">${new Date(conv.created_at).toLocaleDateString()}</div>
-                    <div class="fw-bold text-truncate" title="${conv.title}" style="line-height: 1.2;">${conv.title}</div>
+                    <div class="fw-semibold text-truncate" title="${conv.title}" style="line-height: 1.2;">${capitalizeFirstLetter(conv.title)}</div>
                 </div>
                 <div class="dropdown ms-2 conversation-actions">
                     <button class="btn btn-sm btn-icon btn-flush dropdown-toggle" type="button" aria-expanded="false" title="Opzioni conversazione">
