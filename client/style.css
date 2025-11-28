@@ -198,6 +198,68 @@ body{
   border: 1px solid #dedede;
 }
 
+/* Stili per l'overlay di caricamento globale */
+#global_loading_overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent; /* Overlay completamente trasparente */
+    z-index: 9999; /* Assicura che sia sopra tutto il resto */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* La classe d-none di Bootstrap gestirà l'hide/show */
+}
+
+/* Stili per il contenitore dell'header della chat */
+#chat_card-header {
+    position: relative; /* Necessario per il posizionamento assoluto della progress bar */
+}
+
+/* Custom Progress Bar in Header */
+.header-progress-bar {
+    position: absolute;
+    bottom: -3px; /* Posiziona al bordo inferiore dell'header */
+    left: 0;
+    height: 3px; /* Altezza della progress bar */
+    width: 100%; /* Inizialmente occupa tutta la larghezza */
+    background-color: transparent; /* Inizialmente trasparente */
+    overflow: hidden; /* Nasconde la parte che si muove al di fuori */
+    z-index: 10; /* Assicura che sia sopra altri elementi se necessario */
+    pointer-events: none; /* Permette ai click di passare attraverso */
+    display: none; /* Nascosto di default */
+}
+
+.header-progress-bar.active {
+    display: block; /* Mostra la barra quando attiva */
+}
+
+.header-progress-bar.active::before {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 30%; /* Larghezza del segmento mobile */
+    background-color: #c59247 ; /* Colore della progress bar */
+    position: absolute;
+    left: -30%; /* Inizia fuori dallo schermo */
+    animation: indeterminate-progress 2.5s infinite ease-in-out; /* Animazione */
+}
+
+/* Animazione per la progress bar indeterminata */
+@keyframes indeterminate-progress {
+    0% {
+        left: -30%;
+    }
+    50% {
+        left: 100%;
+    }
+    100% {
+        left: -30%;
+    }
+}
+
   
 
 

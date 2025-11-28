@@ -7,6 +7,11 @@ const { initializeDatabase, getDb } = require('./database');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// --- Configurable Delay for Debugging ---
+const DELAY_MS = process.env.DEBUG_API_DELAY ? parseInt(process.env.DEBUG_API_DELAY, 10) : 3000; // Default to 3 seconds for visibility
+// Helper function to introduce a delay
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 app.use(express.json());
 
 // Funzione asincrona per avviare il server dopo l'inizializzazione del DB
@@ -27,6 +32,7 @@ const startServer = async () => {
       } else {
         conversations = db.prepare('SELECT id, title, created_at FROM conversations ORDER BY created_at DESC').all();
       }
+      await delay(DELAY_MS);
       res.json(conversations);
     } catch (error) {
       console.error('Errore nel recupero delle conversazioni:', error);
@@ -45,6 +51,7 @@ const startServer = async () => {
       } else {
         messages = db.prepare('SELECT id, role, content, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC').all(id);
       }
+      await delay(DELAY_MS);
       res.json(messages);
     } catch (error) {
       console.error(`Errore nel recupero dei messaggi per la conversazione ${id}:`, error);
@@ -61,10 +68,34 @@ const startServer = async () => {
       } else {
         db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
       }
+      await delay(DELAY_MS);
       res.status(200).json({ message: 'Conversazione eliminata con successo.' });
     } catch (error) {
       console.error(`Errore nell'eliminazione della conversazione ${id}:`, error);
       res.status(500).json({ error: 'Errore interno del server' });
+    }
+  });
+
+  // PUT /api/conversations/:id/title
+  apiRouter.put('/conversations/:id/title', async (req, res) => {
+    const { id } = req.params;
+    const { title } = req.body;
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Il titolo è richiesto e deve essere una stringa non vuota.' });
+    }
+
+    try {
+      if (process.env.NODE_ENV === 'production') {
+        await db.query('UPDATE conversations SET title = $1 WHERE id = $2', [title, id]);
+      } else {
+        db.prepare('UPDATE conversations SET title = ? WHERE id = ?').run(title, id);
+      }
+      await delay(DELAY_MS); // <--- ADDED DELAY
+      res.status(200).json({ message: 'Titolo conversazione aggiornato con successo.' });
+    } catch (error) {
+      console.error(`Errore nell'aggiornamento del titolo per la conversazione ${id}:`, error);
+      res.status(500).json({ error: 'Errore interno del server durante l\'aggiornamento del titolo.' });
     }
   });
 

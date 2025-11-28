@@ -26,6 +26,8 @@ const cacheDOMElements = () => {
     DOM.conversationsList = document.querySelector('#conversations_list');
     DOM.toggleConversationsContainer = document.querySelector('.toggle_conversations_container');
     DOM.conversationContainer = document.querySelector('.conversation_container');
+    DOM.globalLoadingOverlay = document.querySelector('#global_loading_overlay');
+    DOM.headerProgressBar = document.querySelector('#header_progress_bar');
     return true;
 };
 
@@ -178,17 +180,36 @@ const renderMessages = () => {
 
 const setLoadingState = (isLoading) => {
     AppState.isLoading = isLoading;
-    if (DOM.sendButton) {
-        DOM.sendButton.innerHTML = isLoading ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>' : 'Send';
+    updateGlobalLoadingUI(isLoading); // Update global loading overlay based on new loading status
+    updateHeaderLoadingBar(isLoading); // Update header progress bar based on new loading status
+};
+
+// Funzione per aggiornare la visibilità dell'overlay di caricamento globale
+const updateGlobalLoadingUI = (isLoading) => {
+    if (DOM.globalLoadingOverlay) {
+        if (isLoading) {
+            DOM.globalLoadingOverlay.classList.remove('d-none'); // Mostra overlay
+        } else {
+            DOM.globalLoadingOverlay.classList.add('d-none'); // Nascondi overlay
+        }
     }
-    if (DOM.textarea) DOM.textarea.disabled = isLoading;
-    updateSendButtonState(); // Update send button state based on new loading status
+};
+
+// Funzione per aggiornare la visibilità e l'animazione della progress bar nell'header
+const updateHeaderLoadingBar = (isLoading) => {
+    if (DOM.headerProgressBar) {
+        if (isLoading) {
+            DOM.headerProgressBar.classList.add('active'); // Attiva l'animazione
+        } else {
+            DOM.headerProgressBar.classList.remove('active'); // Disattiva l'animazione
+        }
+    }
 };
 
 // Funzione helper per aggiornare lo stato del bottone di invio
 const updateSendButtonState = () => {
     const isTextareaContentValid = DOM.textarea && DOM.textarea.value.trim() !== '';
-    DOM.sendButton.disabled = !(isTextareaContentValid && !AppState.isLoading);
+    DOM.sendButton.disabled = !isTextareaContentValid;
 };
 
 
@@ -223,6 +244,7 @@ const handleDeleteConversation = async (conversationId) => {
     });
 
     if (result.isConfirmed) {
+        setLoadingState(true); // <-- Add setLoadingState(true)
         try {
             await deleteConversation(conversationId);
             
@@ -248,6 +270,8 @@ const handleDeleteConversation = async (conversationId) => {
                 title: 'Errore!',
                 text: `Impossibile eliminare la conversazione: ${error.message}`,
             });
+        } finally { // <-- Add finally block
+            setLoadingState(false); // <-- Add setLoadingState(false)
         }
     }
 };
