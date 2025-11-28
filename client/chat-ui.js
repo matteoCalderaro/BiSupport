@@ -3,7 +3,7 @@
  * @description Gestisce l'interfaccia utente della chat, gli eventi e il rendering dei messaggi, inclusa la cronologia.
  */
 
-import { getBotCompletion, fetchConversations, fetchMessages, deleteConversation } from './chat-service.js';
+import { getBotCompletion, fetchConversations, fetchMessages, deleteConversation, updateConversationTitle } from './chat-service.js';
 
 // --- App State ---
 const AppState = {
@@ -140,7 +140,7 @@ const renderConversationsList = () => {
                     <button class="btn btn-sm btn-icon btn-flush dropdown-toggle" type="button" aria-expanded="false" title="Opzioni conversazione">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-start">
+                    <ul class="dropdown-menu dropdown-menu-start shadow-sm">
                         <li><a class="dropdown-item rename-btn" href="#"><i class="bi bi-pencil me-2"></i>Rinomina</a></li>
                         <li><a class="dropdown-item text-danger delete-btn" href="#"><i class="bi bi-trash me-2"></i>Elimina</a></li>
                     </ul>
@@ -179,11 +179,18 @@ const renderMessages = () => {
 const setLoadingState = (isLoading) => {
     AppState.isLoading = isLoading;
     if (DOM.sendButton) {
-        DOM.sendButton.disabled = isLoading;
         DOM.sendButton.innerHTML = isLoading ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>' : 'Send';
     }
     if (DOM.textarea) DOM.textarea.disabled = isLoading;
+    updateSendButtonState(); // Update send button state based on new loading status
 };
+
+// Funzione helper per aggiornare lo stato del bottone di invio
+const updateSendButtonState = () => {
+    const isTextareaContentValid = DOM.textarea && DOM.textarea.value.trim() !== '';
+    DOM.sendButton.disabled = !(isTextareaContentValid && !AppState.isLoading);
+};
+
 
 // --- Funzioni di Utilità SweetAlert2 ---
 const showCustomSwal = async ({ type, title, text, confirmButtonText, showCancelButton, icon, cancelButtonText }) => {
@@ -246,14 +253,63 @@ const handleDeleteConversation = async (conversationId) => {
 };
 
 const handleRenameConversation = async (conversationId, currentTitle) => {
-    console.log(`Funzione 'Rinomina' cliccata per la conversazione ${conversationId} con titolo: "${currentTitle}"`);
-    showCustomSwal({
-        type: 'info',
-        title: 'Funzionalità non implementata',
-        text: 'La rinomina della conversazione non è ancora stata implementata. Sarà aggiunta presto!',
-        confirmButtonText: 'Capito'
+    const { value: newTitle, isConfirmed, isDismissed } = await Swal.fire({
+        title: 'Rinomina Conversazione',
+        input: 'text',
+        inputLabel: 'Nuovo titolo per la conversazione',
+        inputValue: currentTitle,
+        showCancelButton: true,
+        confirmButtonText: 'Salva',
+        cancelButtonText: 'Annulla',
+        inputValidator: (value) => {
+            if (!value || value.trim() === '') {
+                return 'Devi inserire un titolo!';
+            }
+            if (value.trim() === currentTitle.trim()) {
+                return 'Il nuovo titolo è uguale a quello attuale.';
+            }
+            return null; // Return null if validation passes
+        },
+        heightAuto: false, // Prevents swal from modifying body/html height
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-light me-3'
+        },
+        buttonsStyling: false,
+        reverseButtons: true,
     });
-    // Implementazione futura con SweetAlert2 input e chiamata API backend
+
+    if (isConfirmed) {
+        setLoadingState(true);
+        try {
+            await updateConversationTitle(conversationId, newTitle);
+            
+            // Aggiorna lo stato locale
+            const conversationToUpdate = AppState.conversations.find(conv => conv.id == conversationId);
+            if (conversationToUpdate) {
+                conversationToUpdate.title = newTitle;
+            }
+            renderConversationsList(); // Aggiorna la UI
+            showCustomSwal({
+                type: 'success',
+                title: 'Rinominata!',
+                text: 'La conversazione è stata rinominata con successo.',
+            });
+        } catch (error) {
+            console.error("Errore durante la rinomina della conversazione:", error);
+            showCustomSwal({
+                type: 'error',
+                title: 'Errore!',
+                text: `Impossibile rinominare la conversazione: ${error.message}`,
+            });
+        } finally {
+            setLoadingState(false);
+        }
+    } else if (isDismissed) {
+        // User cancelled, do nothing.
+    }
+    // The case where newTitle.trim() === currentTitle.trim() is now fully handled by inputValidator,
+    // which prevents confirmation. So the 'else if' for info message is no longer reachable.
 };
 
 const closeAllOpenDropdowns = () => {
@@ -306,9 +362,10 @@ const handleMessaging = async (messageText) => {
     if (AppState.isLoading || !messageText) return;
     setLoadingState(true);
 
-    // Mostra subito il messaggio dell'utente per feedback immediato
-    DOM.messagesContainer.insertAdjacentHTML('beforeend', createOutgoingMessageHTML(messageText));
-    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+    // Add user's message to state and render for immediate feedback (Optimistic Update)
+    AppState.activeMessages.push({ role: 'user', content: messageText, timestamp: new Date().toISOString() });
+    renderMessages(); // Render messages from updated state
+
     if (DOM.textarea) {
         DOM.textarea.value = '';
         DOM.textarea.focus();
@@ -376,12 +433,16 @@ const setupGlobalDropdownCloser = () => {
 };
 
 const setupEventListeners = () => {
+    updateSendButtonState(); // Set initial state of send button
+
     DOM.textarea.addEventListener('keydown', (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleMessaging(DOM.textarea.value.trim());
         }
     });
+
+    DOM.textarea.addEventListener('input', updateSendButtonState); // Update button state on text input
 
     DOM.sendButton.addEventListener('click', () => {
         handleMessaging(DOM.textarea.value.trim());
@@ -437,7 +498,7 @@ const createOutgoingMessageHTML = (message) => `
     <div class="d-flex justify-content-end mb-10">
         <div class="d-flex flex-column align-items-end mw-90">
             <div class="d-flex align-items-center mb-2">
-                <div class="me-3"><span class="text-muted fs-7 mb-1">${formatTimestamp()}</span><span class="fs-5 fw-bold text-primary ms-1">You</span></div>
+                <div class="me-3"><span class="text-muted fs-7 mb-1">${formatTimestamp()}</span></div>
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-message-out text-primary fw-bold" style="width: 35px; height: 35px;"><span class="fs-5">MC</span></div>
             </div>
             <div class="p-5 rounded bg-message-out text-gray-900 fw-semibold text-end">${message}</div>

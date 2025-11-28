@@ -64,6 +64,32 @@ export const deleteConversation = async (conversationId) => {
 };
 
 /**
+ * Aggiorna il titolo di una conversazione specifica.
+ * @param {number} conversationId - L'ID della conversazione da aggiornare.
+ * @param {string} newTitle - Il nuovo titolo per la conversazione.
+ * @returns {Promise<Object>} L'oggetto di risposta dal server.
+ */
+export const updateConversationTitle = async (conversationId, newTitle) => {
+    try {
+        const response = await fetch(`${API_URL}/conversations/${conversationId}/title`, {
+            method: 'PUT', // or PATCH, depending on backend implementation
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: newTitle })
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Errore HTTP: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Errore nell'aggiornamento del titolo per la conversazione ${conversationId}:`, error);
+        throw error;
+    }
+};
+
+/**
  * Invia un messaggio al backend e ottiene la risposta del bot.
  * Gestisce sia la creazione di nuove conversazioni sia l'aggiunta a quelle esistenti.
  * 
