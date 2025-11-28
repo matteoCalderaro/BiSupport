@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // --- Configurable Delay for Debugging ---
-const DELAY_MS = process.env.DEBUG_API_DELAY ? parseInt(process.env.DEBUG_API_DELAY, 10) : 3000; // Default to 3 seconds for visibility
+const DELAY_MS = process.env.DEBUG_API_DELAY ? parseInt(process.env.DEBUG_API_DELAY, 10) : 1500; // Default to 3 seconds for visibility
 // Helper function to introduce a delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
