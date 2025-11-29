@@ -54,7 +54,11 @@ body{
 
 
 .bg-message-in { background-color: var(--color-message-in) !important }
-.bg-message-out { background-color: var(--color-message-out) !important }
+.bg-message-out { 
+  background-color: var(--color-message-out) !important ;
+  border-radius: 20px;
+  border-top-right-radius: 0;
+}
 
 
 
@@ -70,15 +74,14 @@ body{
 
 #chat_card-header {
     display: flex;
-    min-height: 70px;
     padding: 0 2.25rem;
-    border-bottom: 1px solid var(--color-light-gray);
     justify-content: space-between;
 }
 
 .chat_card-body {
     flex-grow: 1;
-    padding: 2rem 2.25rem;
+    padding: 0;
+    padding-top: 2rem;
     min-height: 0;
 }
 
@@ -91,8 +94,48 @@ body{
 
 
 #chat_card-footer {
-    padding: 2rem 2.25rem;
-    border-top: 1px solid var(--color-light-gray);
+    padding: 0;
+    padding-bottom: 2.25rem;
+    /* border-top: 1px solid var(--color-light-gray); */
+}
+
+#chat_card-footer textarea {
+    max-height: 250px; /* Altezza massima prima che appaia la scrollbar */
+    overflow-y: auto;   /* Mostra la scrollbar solo quando necessario */
+    resize: none;       /* Disabilita il ridimensionamento manuale */
+    scrollbar-width: thin; 
+    scrollbar-color: var(--color-light-gray) transparent !important;
+    border: none;
+}
+
+#chat_card-footer textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+}
+
+/* Nasconde le freccette della scrollbar per WebKit e applica stili coerenti */
+#chat_card-footer textarea::-webkit-scrollbar {
+    width: 8px; /* Larghezza coerente con 'scrollbar-width: thin' */
+}
+
+#chat_card-footer textarea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#chat_card-footer textarea::-webkit-scrollbar-thumb {
+    background-color: var(--color-light-gray);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+#chat_card-footer textarea::-webkit-scrollbar-thumb:hover {
+    background-color: #cccccc;
+}
+
+#chat_card-footer textarea::-webkit-scrollbar-button {
+    display: none; /* Esplicita rimozione delle frecce */
 }
 
 
@@ -225,7 +268,7 @@ body{
     left: 0;
     height: 3px; /* Altezza della progress bar */
     width: 100%; /* Inizialmente occupa tutta la larghezza */
-    background-color: transparent; /* Inizialmente trasparente */
+    background-color: var(--color-light-gray); /* Binario fisso grigio chiaro */
     overflow: hidden; /* Nasconde la parte che si muove al di fuori */
     z-index: 10; /* Assicura che sia sopra altri elementi se necessario */
     pointer-events: none; /* Permette ai click di passare attraverso */
@@ -258,6 +301,80 @@ body{
     100% {
         left: -30%;
     }
+}
+
+/* Stili per i bottoni icona circolari (Send e Mic) */
+.btn-icon-send,
+.btn-icon-mic {
+  width: 40px; /* Dimensione fissa */
+  height: 40px; /* Dimensione fissa */
+  border-radius: 50% !important; /* Forma circolare */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0; /* Rimuovi padding interno di default */
+  border: none;
+  transition: background-color 0.3s ease; /* Transizione fluida */
+}
+
+/* Stili specifici per il bottone Send */
+.btn-icon-send {
+  background-color: #010336 !important; /* Colore abilitato */
+  color: white; /* Colore icona */
+}
+
+.btn-icon-send:hover:not(:disabled) {
+  background-color: #010336a0 !important; /* Lievemente più chiaro all'hover */
+}
+
+.btn-icon-send:disabled {
+  background-color: #c3c1c1 !important; /* Colore disabilitato (molto più chiaro) */
+  color: #000000; /* Colore icona disabilitata */
+}
+
+/* Stili specifici per il bottone Mic */
+.btn-icon-mic {
+  background-color: transparent !important;
+  color: #6c757d; /* Grigio secondario */
+}
+
+.btn-icon-mic:hover {
+  background-color: #f0f0f0 !important; /* Sfondo grigio chiaro all'hover */
+}
+
+.btn-icon-send .arrow-icon,
+.btn-icon-send .spinner-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-icon-send .arrow-icon i,
+.btn-icon-mic i {
+  font-size: 1.75rem; /* Dimensione icona */
+}
+
+.btn-icon-send .spinner-icon .spinner-border {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em; /* Adjust to match line height */
+  background-color: currentColor; /* Inherit color from parent */
+  vertical-align: middle;
+  animation: blink-caret .75s step-end infinite;
+}
+
+@keyframes blink-caret {
+  from, to { background-color: transparent }
+  50% { background-color: currentColor }
+}
+
+.fs-time{
+  font-size: 11px;
 }
 
   

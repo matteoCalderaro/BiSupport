@@ -3,7 +3,7 @@
  * @description Gestisce l'interfaccia utente della chat, gli eventi e il rendering dei messaggi, inclusa la cronologia.
  */
 
-import { getBotCompletion, fetchConversations, fetchMessages, deleteConversation, updateConversationTitle } from './chat-service.js';
+import { streamBotCompletion, fetchConversations, fetchMessages, deleteConversation, updateConversationTitle } from './chat-service.js';
 
 // --- App State ---
 const AppState = {
@@ -11,6 +11,7 @@ const AppState = {
     activeConversationId: null,
     activeMessages: [], // [{ role, content, timestamp }]
     isLoading: false,
+    currentBotMessageElement: null, // Riferimento all'elemento del messaggio del bot attualmente in costruzione
 };
 
 // --- Cache degli elementi DOM ---
@@ -164,17 +165,31 @@ const renderConversationsList = () => {
 
 const renderMessages = () => {
     if (!DOM.messagesContainer) return;
-    DOM.messagesContainer.innerHTML = '';
-
-    if (AppState.activeMessages.length === 0 && AppState.activeConversationId === null) {
-        const welcomeMessage = "Ciao, sono il tuo consulente BI. Come posso aiutarti?";
-        DOM.messagesContainer.innerHTML = createIncomingMessageHTML(welcomeMessage);
-    } else {
+    // Clear only if it's not currently building a streaming message
+    if (!AppState.currentBotMessageElement) {
+        DOM.messagesContainer.innerHTML = '';
         AppState.activeMessages.forEach(msg => {
             const html = msg.role === 'user' ? createOutgoingMessageHTML(msg.content) : createIncomingMessageHTML(msg.content);
             DOM.messagesContainer.insertAdjacentHTML('beforeend', html);
         });
+    } else {
+        // If streaming, only add new user messages or update existing streaming message
+        const renderedMessageCount = DOM.messagesContainer.children.length;
+        const messagesToRender = AppState.activeMessages.slice(renderedMessageCount);
+
+        messagesToRender.forEach(msg => {
+            if (msg.role === 'user') { // Always render user messages
+                DOM.messagesContainer.insertAdjacentHTML('beforeend', createOutgoingMessageHTML(msg.content));
+            }
+            // For assistant messages, they are handled by streaming updates, not full re-renders here
+        });
     }
+
+    if (AppState.activeMessages.length === 0 && AppState.activeConversationId === null && !AppState.currentBotMessageElement) {
+        const welcomeMessage = "Ciao, sono il tuo consulente BI. Come posso aiutarti?";
+        DOM.messagesContainer.insertAdjacentHTML('beforeend', createIncomingMessageHTML(welcomeMessage));
+    }
+    
     DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
 };
 
@@ -214,11 +229,22 @@ const updateSendButtonState = () => {
 
 // Funzione per gestire specificamente lo stato di "busy" dell'area input messaggi
 const setMessagingBusyState = (isBusy) => {
-    if (DOM.textarea) {
-        DOM.textarea.disabled = isBusy;
-    }
+    // La textarea rimane abilitata per permettere la digitazione del messaggio successivo.
+    // Il pulsante di invio viene disabilitato per prevenire invii multipli.
     if (DOM.sendButton) {
-        DOM.sendButton.innerHTML = isBusy ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>' : 'Send';
+        DOM.sendButton.disabled = isBusy; // Disabilita/abilita il pulsante Invia
+        const arrow = DOM.sendButton.querySelector('.arrow-icon');
+        const spinner = DOM.sendButton.querySelector('.spinner-icon');
+
+        if (arrow && spinner) {
+            if (isBusy) {
+                arrow.classList.add('d-none');
+                spinner.classList.remove('d-none');
+            } else {
+                arrow.classList.remove('d-none');
+                spinner.classList.add('d-none');
+            }
+        }
     }
     // Note: sendButton.disabled is managed by updateSendButtonState based on textarea content
 };
@@ -281,6 +307,7 @@ const handleDeleteConversation = async (conversationId) => {
                         handleNewChat(); // Renderizzerà la nuova UI
                     } else {
                         renderConversationsList(); // Aggiorna solo la lista
+                        if (DOM.textarea) DOM.textarea.focus();
                     }
                 }
             });
@@ -353,6 +380,7 @@ const handleRenameConversation = async (conversationId, currentTitle) => {
             });
         } finally {
             setLoadingState(false);
+            if (DOM.textarea) DOM.textarea.focus();
         }
     } else if (isDismissed) {
         // User cancelled, do nothing.
@@ -392,6 +420,7 @@ const selectConversation = async (conversationId) => {
         setLoadingState(false);
         renderMessages();
         renderConversationsList();
+        if (DOM.textarea) DOM.textarea.focus();
     }
 };
 
@@ -406,6 +435,26 @@ const handleNewChat = () => {
     if (DOM.textarea) DOM.textarea.focus();
 };
 
+// --- Funzioni Helper per la Creazione di Messaggi HTML ---
+
+
+
+
+// Funzione helper per aggiungere un nuovo messaggio in arrivo (del bot) e ottenere un riferimento al suo content-body
+const appendIncomingMessageHTML = (initialContent = '') => {
+    const messageId = `bot-message-${Date.now()}`;
+    const html = _createBaseIncomingMessageHTML({
+        content: initialContent,
+        isStreaming: true,
+        messageId: messageId,
+    });
+    
+    DOM.messagesContainer.insertAdjacentHTML('beforeend', html);
+    const newMessageElement = DOM.messagesContainer.querySelector(`[data-message-id="${messageId}"] .bot-message-content`);
+    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+    return newMessageElement;
+};
+
 const handleMessaging = async (messageText) => {
     // If global loading is active, prevent new messaging actions.
     // Also prevent if message is empty after trim.
@@ -414,38 +463,84 @@ const handleMessaging = async (messageText) => {
     // Set messaging specific busy state (disables textarea, shows spinner)
     setMessagingBusyState(true); 
 
-    // Add user's message to state and render for immediate feedback (Optimistic Update)
+    // 1. Add user's message to state and render immediately (Optimistic Update)
     AppState.activeMessages.push({ role: 'user', content: messageText, timestamp: new Date().toISOString() });
-    renderMessages(); // Render messages from updated state
+    DOM.messagesContainer.insertAdjacentHTML('beforeend', createOutgoingMessageHTML(messageText)); // Render user message immediately
+    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
 
     if (DOM.textarea) {
         DOM.textarea.value = '';
-        DOM.textarea.focus();
+        autoResizeTextarea(DOM.textarea); // Resetta l'altezza
     }
     
-    try {
-        const response = await getBotCompletion(AppState.activeConversationId, messageText);
-        
-        // Aggiorna l'ID della conversazione se è stata una nuova chat
-        AppState.activeConversationId = response.conversationId;
+    // 2. Prepare for bot's streaming response
+    AppState.currentBotMessageElement = appendIncomingMessageHTML(); // Create an empty container for the bot's message
+    let botFullMessage = ''; // Accumulate bot's message
 
-        // Ricarica tutti i messaggi per assicurare la consistenza (include messaggio utente e bot)
-        AppState.activeMessages = await fetchMessages(AppState.activeConversationId);
-        
-        // Se era una nuova chat, aggiorna la lista delle conversazioni nella sidebar
-        const isNewConversation = AppState.conversations.some(conv => conv.id == response.conversationId) === false;
-        if (isNewConversation) {
-             AppState.conversations = await fetchConversations();
-        }
-        
+    try {
+        await streamBotCompletion(AppState.activeConversationId, messageText, {
+            onConversationId: (id) => {
+                AppState.activeConversationId = id;
+            },
+            onNewConversationCreated: async (isNew) => {
+                if (isNew) {
+                    AppState.conversations = await fetchConversations();
+                    renderConversationsList();
+                }
+            },
+            onChunk: (chunk) => {
+                botFullMessage += chunk;
+                if (AppState.currentBotMessageElement) {
+                    // Update content, keeping the cursor at the end
+                    AppState.currentBotMessageElement.innerHTML = botFullMessage + '<span class="streaming-cursor"></span>';
+                    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+                }
+            },
+            onComplete: async () => {
+                // Remove the streaming cursor
+                if (AppState.currentBotMessageElement) {
+                    const cursor = AppState.currentBotMessageElement.querySelector('.streaming-cursor');
+                    if (cursor) cursor.remove();
+                }
+
+                // Add the completed bot message to state
+                AppState.activeMessages.push({
+                    role: 'assistant',
+                    content: botFullMessage,
+                    timestamp: new Date().toISOString(),
+                });
+                AppState.currentBotMessageElement = null; // Reset reference
+
+                // but safer for cases where title updates on existing conversations too.
+                AppState.conversations = await fetchConversations(); 
+                renderConversationsList();
+            },
+            onError: (error) => {
+                console.error("Errore in handleMessaging (streaming):", error);
+                // Remove cursor if present
+                if (AppState.currentBotMessageElement) {
+                    const cursor = AppState.currentBotMessageElement.querySelector('.streaming-cursor');
+                    if (cursor) cursor.remove();
+                    AppState.currentBotMessageElement.innerHTML += ` <span class="text-danger">(Errore: ${error.message})</span>`;
+                } else {
+                    // Fallback if no message element was created (e.g., error before first chunk)
+                    AppState.activeMessages.push({ role: 'assistant', content: `Spiacente, si è verificato un errore: ${error.message}` });
+                    renderMessages();
+                }
+                AppState.currentBotMessageElement = null;
+            }
+        });
+
     } catch (error) {
-        console.error("Errore in handleMessaging:", error);
-        AppState.activeMessages.push({ role: 'assistant', content: `Spiacente, si è verificato un errore: ${error.message}` });
+        console.error("Errore generico in handleMessaging:", error);
+        AppState.activeMessages.push({ role: 'assistant', content: `Spiacente, si è verificato un errore generico: ${error.message}` });
+        renderMessages();
     } finally {
-        // Clear messaging specific busy state (re-enables textarea, restores send button text)
         setMessagingBusyState(false);
-        renderMessages(); // Renderizza i messaggi aggiornati dallo stato
-        renderConversationsList(); // Aggiorna per mostrare lo stato 'active' corretto e nuove conversazioni
+        updateSendButtonState(); // Ricalcola lo stato del bottone (disabilitandolo se la textarea è vuota)
+        if (DOM.textarea) DOM.textarea.focus();
+        // Ensure final scroll
+        DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
     }
 };
 
@@ -485,6 +580,14 @@ const setupGlobalDropdownCloser = () => {
     });
 };
 
+// Funzione per il ridimensionamento automatico della textarea
+const autoResizeTextarea = (element) => {
+    // Resetta l'altezza per ricalcolare la scrollHeight corretta
+    element.style.height = 'auto';
+    // Imposta la nuova altezza basata sul contenuto, aggiungendo 2px per evitare una scrollbar flash
+    element.style.height = (element.scrollHeight) + 'px';
+};
+
 const setupEventListeners = () => {
     updateSendButtonState(); // Set initial state of send button
 
@@ -495,7 +598,11 @@ const setupEventListeners = () => {
         }
     });
 
-    DOM.textarea.addEventListener('input', updateSendButtonState); // Update button state on text input
+    // Aggiungi l'evento per l'auto-ridimensionamento
+    DOM.textarea.addEventListener('input', () => {
+        autoResizeTextarea(DOM.textarea);
+        updateSendButtonState(); // Aggiorna anche lo stato del bottone
+    });
 
     DOM.sendButton.addEventListener('click', () => {
         handleMessaging(DOM.textarea.value.trim());
@@ -553,22 +660,33 @@ const formatTimestamp = () => new Date().toLocaleTimeString('it-IT', { hour: '2-
 
 const createOutgoingMessageHTML = (message) => `
     <div class="d-flex justify-content-end mb-10">
-        <div class="d-flex flex-column align-items-end mw-90">
-            <div class="d-flex align-items-center mb-2">
-                <div class="me-3"><span class="text-muted fs-7 mb-1">${formatTimestamp()}</span></div>
-                <div class="d-flex justify-content-center align-items-center rounded-circle bg-message-out text-primary fw-bold" style="width: 35px; height: 35px;"><span class="fs-5">MC</span></div>
-            </div>
-            <div class="p-5 rounded bg-message-out text-gray-900 fw-semibold text-end">${message}</div>
-        </div>
+        <div class="px-5 py-3 bg-message-out text-gray-900">${message}</div>
     </div>`;
 
-const createIncomingMessageHTML = (message) => `
-    <div class="d-flex justify-content-start mb-10">
-        <div class="d-flex flex-column align-items-start mw-90">
-            <div class="d-flex align-items-center mb-2">
-                <div class="d-flex justify-content-center align-items-center rounded-circle bg-message-in" style="width: 35px; height: 35px;"><img src="/brain.png" alt="Bot Icon" style="width: 24px; height: 24px; margin-right: 2px;" /></div>
-                <div class="ms-3"><span class="fs-5 fw-bold text-bisup me-1">BiChat</span><span class="text-muted fs-7 mb-1">${formatTimestamp()}</span></div>
+const createIncomingMessageHTML = (message) => {
+    // Chiama la funzione base con isStreaming: false per un messaggio normale
+    return _createBaseIncomingMessageHTML({ content: message, isStreaming: false });
+};
+
+/**
+ * Funzione base unificata per creare l'HTML di un messaggio in arrivo (bot).
+ * Gestisce sia i messaggi normali che quelli in streaming.
+ * @param {object} options - Opzioni per la creazione del messaggio.
+ * @param {string} options.content - Il contenuto testuale del messaggio.
+ * @param {boolean} options.isStreaming - Se true, aggiunge gli elementi per lo streaming (ID, classe, cursore).
+ * @param {string|null} options.messageId - L'ID univoco per il messaggio in streaming.
+ * @returns {string} L'HTML completo del messaggio.
+ */
+const _createBaseIncomingMessageHTML = ({ content = '', isStreaming = false, messageId = null }) => {
+    const messageIdAttr = messageId ? `data-message-id="${messageId}"` : '';
+    const contentClass = isStreaming ? 'bot-message-content' : '';
+    const streamingCursor = isStreaming ? '<span class="streaming-cursor"></span>' : '';
+
+    return `
+        <div class="d-flex justify-content-start mb-10" ${messageIdAttr}>
+            <div class="d-flex flex-column align-items-start">
+                <span class="fs-5 fw-bold text-bisup mb-1">BiChat</span>
+                <div class="rounded text-gray-900 ${contentClass}">${content}${streamingCursor}</div>
             </div>
-            <div class="p-5 rounded bg-message-in text-gray-900 fw-semibold text-start">${message}</div>
-        </div>
-    </div>`;
+        </div>`;
+};

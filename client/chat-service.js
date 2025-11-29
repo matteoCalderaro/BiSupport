@@ -90,14 +90,21 @@ export const updateConversationTitle = async (conversationId, newTitle) => {
 };
 
 /**
- * Invia un messaggio al backend e ottiene la risposta del bot.
+ * Invia un messaggio al backend e gestisce la risposta del bot in streaming.
  * Gestisce sia la creazione di nuove conversazioni sia l'aggiunta a quelle esistenti.
- * 
+ *
  * @param {number | null} conversationId - L'ID della conversazione, o null se è una nuova chat.
  * @param {string} userMessage - Il messaggio dell'utente.
- * @returns {Promise<Object>} Un oggetto contenente { botMessage, conversationId }.
+ * @param {object} callbacks - Oggetto contenente le funzioni di callback per i vari eventi dello stream.
+ * @param {function(string): void} callbacks.onChunk - Chiamata per ogni pezzo di testo ricevuto.
+ * @param {function(number): void} callbacks.onConversationId - Chiamata quando l'ID della conversazione è disponibile.
+ * @param {function(boolean): void} callbacks.onNewConversationCreated - Chiamata per indicare se è stata creata una nuova conversazione.
+ * @param {function(): void} callbacks.onComplete - Chiamata al termine dello stream.
+ * @param {function(Error): void} callbacks.onError - Chiamata in caso di errore.
  */
-export const getBotCompletion = async (conversationId, userMessage) => {
+export const streamBotCompletion = async (conversationId, userMessage, callbacks) => {
+    const { onChunk, onConversationId, onNewConversationCreated, onComplete, onError } = callbacks;
+
     console.log("Chat Service: Chiamo /api/chat/complete con:", { conversationId, userMessage });
 
     const requestBody = {
@@ -114,21 +121,77 @@ export const getBotCompletion = async (conversationId, userMessage) => {
             body: JSON.stringify(requestBody)
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            throw new Error(data.error || `Errore HTTP: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Errore HTTP: ${response.status} - ${errorText}`);
         }
 
-        if (!data.botMessage || !data.conversationId) {
-            throw new Error("Risposta API non valida: mancano botMessage o conversationId.");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                // If there's any remaining data in the buffer, process it.
+                if (buffer.trim()) {
+                    console.warn("Dati residui nel buffer SSE alla fine dello stream:", buffer);
+                }
+                break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+
+            let eventEndIndex;
+            while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
+                const eventString = buffer.substring(0, eventEndIndex);
+                buffer = buffer.substring(eventEndIndex + 2);
+
+                let eventType = 'message';
+                let data = '';
+
+                for (const line of eventString.split('\n')) {
+                    if (line.startsWith('event: ')) {
+                        eventType = line.substring(7);
+                    } else if (line.startsWith('data: ')) {
+                        data = line.substring(6);
+                    }
+                }
+
+                if (data) {
+                    try {
+                        const parsedData = JSON.parse(data);
+                        switch (eventType) {
+                            case 'conversationId':
+                                onConversationId?.(parsedData);
+                                break;
+                            case 'newConversationCreated':
+                                onNewConversationCreated?.(parsedData);
+                                break;
+                            case 'chunk':
+                                if (parsedData.content) {
+                                    onChunk?.(parsedData.content);
+                                }
+                                break;
+                            case 'error':
+                                if (parsedData.message) {
+                                    onError?.(new Error(parsedData.message));
+                                }
+                                break;
+                            case 'end':
+                                onComplete?.();
+                                return; // End of stream signaled by server
+                        }
+                    } catch (e) {
+                        console.error('Errore nel parsing dei dati SSE:', e, 'Dati:', data);
+                    }
+                }
+            }
         }
-
-        console.log("Chat Service: Risposta ottenuta:", data);
-        return data; // Restituisce { botMessage, conversationId }
-
     } catch (error) {
-        console.error("Errore in getBotCompletion:", error);
-        throw error; // Rilancia l'errore per gestirlo nell'UI
+        console.error("Errore in streamBotCompletion:", error);
+        onError?.(error);
+    } finally {
+        onComplete?.(); // Ensure onComplete is called even if stream breaks unexpectedly
     }
 };

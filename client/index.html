@@ -12,6 +12,10 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
 	
 	<!-- SweetAlert2 CSS -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -26,7 +30,7 @@
 	<!-- History Sidebar -->
 	<div id="chat_history_sidebar" class="bg-light border-end d-flex flex-column" style="width: 250px; min-width: 250px;">
 		<div class="p-4 d-flex justify-content-between align-items-center">
-			<h5 class="mb-0">BiSmart</h5>
+			<h5 class="mb-0 text-bisup fw-bold">BiSmart</h5>
 			<!-- <button id="new_chat_button" class="btn btn-sm btn-primary">Nuova Chat</button> -->
 		</div>
 		<div class="d-flex flex-column gap-2 mx-2" style="margin-bottom: 2.25rem;">
@@ -43,31 +47,42 @@
 			</div>
 		</div>
 	</div>
-
+	
 	<!-- Main Chat Content -->
 	<div class="flex-grow-1 d-flex flex-column">
 		
 		<div id="chat_card" class="w-100 border-0 rounded-0" >
 			
 			<!-- HEADER -->
-			<div id="chat_card-header">
-				
-				<div class="d-flex justify-content-center flex-column">
-					<span class="fs-4 fw-bold text-bisup me-1">BiChat</span>
-					<div>
-						<span class="chat_badge me-1"></span>
-						<span class="fw-semibold text-muted">Active</span>
+			<div id="chat_card-header" class="py-3">
+				<div class="d-flex flex-grow-1 justify-content-between align-items-center">
+					<div class="d-flex align-items-center gap-4">
+						<div class="d-flex justify-content-center align-items-center gap-3">
+							<div class="d-flex justify-content-center align-items-center rounded-circle bg-message-in" style="width: 35px; height: 35px;"><img src="/brain.png" alt="Bot Icon" style="width: 24px; height: 24px; margin-right: 2px;"></div>
+	
+							<span class="fs-4 fw-bold text-bisup me-1">BiChat</span>
+						</div>
+						<div>
+							<span class="chat_badge me-1"></span>
+							<span class="fw-semibold text-muted">Active</span>
+						</div>
+
 					</div>
+					<div class="d-flex justify-content-center align-items-center rounded-circle bg-message-out text-primary fw-bold" style="width: 35px; height: 35px;"><span class="fs-5">MC</span></div>
+
 				</div>
+				
 				
 				<!-- Progress bar will appear visually below the header, but will be animated -->
 				<div id="header_progress_bar" class="header-progress-bar"></div>
 			</div>
 			
 			<!-- BODY -->
-			<div id="chat_card-body" class="chat_card-body">
+			<div id="chat_card-body" class="chat_card-body mx-auto" 
+				style="max-width: 50%; min-width: 50%;">
 				
-				<div id="chat_messages" class="chat_messages me-n5 pe-5">
+				<div id="chat_messages" class="chat_messages" 
+					style="margin-right: -10px !important; scrollbar-color: transparent transparent !important;">
 					
 					<!-- MESSAGGI IN RUNTIME  -->
 					
@@ -76,26 +91,34 @@
 			</div>
 			
 			<!-- FOOTER -->
-			<div id="chat_card-footer" class="pt-4">
-				<textarea class="form-control form-control-flush mb-3" rows="1" data-kt-element="input" placeholder="Type a message"></textarea>
-				
-				<div class="d-flex justify-content-between align-items-center">
-					<div class="d-flex align-items-center me-2">
+			<div id="chat_card-footer">
+				<div class="mx-auto p-5 rounded-4 shadow" style="max-width: 50%;">
+					<textarea class="form-control form-control-flush mb-3" rows="1" data-kt-element="input" placeholder="Chiedi a BiChat"></textarea>
+					
+					<div class="d-flex justify-content-end">
+						<div class="d-flex align-items-center me-4">
+							<button class="btn btn-icon-mic" type="button">
+								<i class="bi bi-mic-fill"></i>
+							</button>
+						</div>
+						<button class="btn btn-primary btn-icon-send" type="button" data-kt-element="send">
+							<span class="arrow-icon"><i class="bi bi-arrow-up"></i></span>
+							<span class="spinner-icon d-none"><span class="spinner-border" role="status" aria-hidden="true"></span></span>
+						</button>					</div>
 					</div>
-					<button class="btn btn-primary" type="button" data-kt-element="send">Send</button>
 				</div>
+				
 			</div>
 			
 		</div>
-			
-	</div>
-	<!-- SweetAlert2 JS -->
-	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<!-- Bootstrap JS Bundle -->
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-	<!-- Global Loading Overlay -->
-	<div id="global_loading_overlay" class="d-none">
-		<!-- Spinner removed as per user instruction -->
-	</div>
-</body>
-</html>
+		<!-- SweetAlert2 JS -->
+		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+		<!-- Bootstrap JS Bundle -->
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+		<!-- Global Loading Overlay -->
+		<div id="global_loading_overlay" class="d-none">
+			<!-- Spinner removed as per user instruction -->
+		</div>
+	</body>
+	</html>
+	
