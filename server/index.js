@@ -63,11 +63,22 @@ const startServer = async () => {
   apiRouter.delete('/conversations/:id', async (req, res) => {
     const { id } = req.params;
     try {
+      let changes = 0;
       if (process.env.NODE_ENV === 'production') {
-        await db.query('DELETE FROM conversations WHERE id = $1', [id]);
+        // For PostgreSQL, use RETURNING id to count affected rows
+        const result = await db.query('DELETE FROM conversations WHERE id = $1 RETURNING id', [id]);
+        changes = result.rows.length;
       } else {
-        db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
+        // For SQLite, info.changes tells how many rows were affected
+        const info = db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
+        changes = info.changes;
       }
+
+      if (changes === 0) {
+        await delay(DELAY_MS); // Apply delay before 404 response as well
+        return res.status(404).json({ error: `Conversazione con ID ${id} non trovata.` });
+      }
+
       await delay(DELAY_MS);
       res.status(200).json({ message: 'Conversazione eliminata con successo.' });
     } catch (error) {

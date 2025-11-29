@@ -94,7 +94,7 @@ const attachConversationActionListeners = (item, dropdownMenuElement) => {
             e.preventDefault();
             e.stopPropagation();
             const conversationId = item.dataset.conversationId;
-            const titleElement = item.querySelector('.fw-semibold.text-truncate');
+            const titleElement = item.querySelector('.title');
             const conversationTitle = titleElement ? titleElement.title : ''; // Safely get title, default to empty string
             handleRenameConversation(conversationId, conversationTitle);
         });
@@ -105,7 +105,7 @@ const attachConversationActionListeners = (item, dropdownMenuElement) => {
             e.preventDefault();
             e.stopPropagation();
             const conversationId = item.dataset.conversationId;
-            const titleElement = item.querySelector('.fw-semibold.text-truncate');
+            const titleElement = item.querySelector('.title');
             const conversationTitle = titleElement ? titleElement.title : ''; // Safely get title, default to empty string
             handleDeleteConversation(conversationId);
         });
@@ -136,7 +136,7 @@ const renderConversationsList = () => {
             <div class="${itemClasses}" data-conversation-id="${conv.id}" ${!isActive ? 'style="cursor: pointer;"' : ''}>
                 <div class="flex-grow-1 overflow-hidden me-2">
                     <div class="fs-7 text-muted" style="line-height: 1; margin-bottom: 0.1rem;">${new Date(conv.created_at).toLocaleDateString()}</div>
-                    <div class="fw-semibold text-truncate" title="${conv.title}" style="line-height: 1.2;">${capitalizeFirstLetter(conv.title)}</div>
+                    <div class="title fw-semibold text-truncate" title="${conv.title}" style="line-height: 1.2;">${capitalizeFirstLetter(conv.title)}</div>
                 </div>
                 <div class="dropdown ms-2 conversation-actions">
                     <button class="btn btn-sm btn-icon btn-flush dropdown-toggle" type="button" aria-expanded="false" title="Opzioni conversazione">
@@ -429,7 +429,7 @@ const setupConversationListClickListener = () => {
         if (!item) return;
 
         const conversationId = item.dataset.conversationId;
-        const conversationTitle = item.querySelector('.fw-bold.text-truncate')?.title;
+        const conversationTitle = item.querySelector('.title')?.title;
 
         // Case 3: Clicked on the dropdown toggle button
         const dropdownToggleElement = e.target.closest('.dropdown-toggle');
