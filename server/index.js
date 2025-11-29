@@ -25,13 +25,8 @@ const startServer = async () => {
   // GET /api/conversations
   apiRouter.get('/conversations', async (req, res) => {
     try {
-      let conversations;
-      if (process.env.NODE_ENV === 'production') {
-        const result = await db.query('SELECT id, title, created_at FROM conversations ORDER BY created_at DESC');
-        conversations = result.rows;
-      } else {
-        conversations = db.prepare('SELECT id, title, created_at FROM conversations ORDER BY created_at DESC').all();
-      }
+      const result = await db.query('SELECT id, title, created_at FROM conversations ORDER BY created_at DESC');
+      const conversations = result.rows; // Directly use result.rows for PostgreSQL
       await delay(DELAY_MS);
       res.json(conversations);
     } catch (error) {
@@ -44,13 +39,8 @@ const startServer = async () => {
   apiRouter.get('/conversations/:id/messages', async (req, res) => {
     const { id } = req.params;
     try {
-      let messages;
-      if (process.env.NODE_ENV === 'production') {
-        const result = await db.query('SELECT id, role, content, timestamp FROM messages WHERE conversation_id = $1 ORDER BY timestamp ASC', [id]);
-        messages = result.rows;
-      } else {
-        messages = db.prepare('SELECT id, role, content, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC').all(id);
-      }
+      const result = await db.query('SELECT id, role, content, timestamp FROM messages WHERE conversation_id = $1 ORDER BY timestamp ASC', [id]);
+      const messages = result.rows; // Directly use result.rows for PostgreSQL
       await delay(DELAY_MS);
       res.json(messages);
     } catch (error) {
@@ -63,16 +53,9 @@ const startServer = async () => {
   apiRouter.delete('/conversations/:id', async (req, res) => {
     const { id } = req.params;
     try {
-      let changes = 0;
-      if (process.env.NODE_ENV === 'production') {
-        // For PostgreSQL, use RETURNING id to count affected rows
-        const result = await db.query('DELETE FROM conversations WHERE id = $1 RETURNING id', [id]);
-        changes = result.rows.length;
-      } else {
-        // For SQLite, info.changes tells how many rows were affected
-        const info = db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
-        changes = info.changes;
-      }
+      // Always use PostgreSQL query syntax and RETURNING id to count affected rows
+      const result = await db.query('DELETE FROM conversations WHERE id = $1 RETURNING id', [id]);
+      const changes = result.rows.length; // For PostgreSQL, result.rows.length tells how many rows were affected
 
       if (changes === 0) {
         await delay(DELAY_MS); // Apply delay before 404 response as well
@@ -97,11 +80,15 @@ const startServer = async () => {
     }
 
     try {
-      if (process.env.NODE_ENV === 'production') {
-        await db.query('UPDATE conversations SET title = $1 WHERE id = $2', [title, id]);
-      } else {
-        db.prepare('UPDATE conversations SET title = ? WHERE id = ?').run(title, id);
+      // Always use PostgreSQL query syntax
+      const result = await db.query('UPDATE conversations SET title = $1 WHERE id = $2', [title, id]);
+      
+      // Optional: Check if any row was actually updated (result.rowCount for pg)
+      if (result.rowCount === 0) {
+        await delay(DELAY_MS);
+        return res.status(404).json({ error: `Conversazione con ID ${id} non trovata.` });
       }
+
       await delay(DELAY_MS); // <--- ADDED DELAY
       res.status(200).json({ message: 'Titolo conversazione aggiornato con successo.' });
     } catch (error) {
@@ -121,28 +108,14 @@ const startServer = async () => {
       try {
           if (!conversationId) {
               const title = userMessage.substring(0, 40) + (userMessage.length > 40 ? '...' : '');
-              if (process.env.NODE_ENV === 'production') {
-                  const result = await db.query('INSERT INTO conversations (title) VALUES ($1) RETURNING id', [title]);
-                  conversationId = result.rows[0].id;
-              } else {
-                  const info = db.prepare('INSERT INTO conversations (title) VALUES (?)').run(title);
-                  conversationId = info.lastInsertRowid;
-              }
+              const result = await db.query('INSERT INTO conversations (title) VALUES ($1) RETURNING id', [title]);
+              conversationId = result.rows[0].id;
           }
 
-          if (process.env.NODE_ENV === 'production') {
-              await db.query('INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)', [conversationId, 'user', userMessage]);
-          } else {
-              db.prepare('INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)').run(conversationId, 'user', userMessage);
-          }
+          await db.query('INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)', [conversationId, 'user', userMessage]);
     
-          let messagesFromDb;
-          if (process.env.NODE_ENV === 'production') {
-              const result = await db.query('SELECT role, content FROM messages WHERE conversation_id = $1 ORDER BY timestamp ASC', [conversationId]);
-              messagesFromDb = result.rows;
-          } else {
-              messagesFromDb = db.prepare('SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY timestamp ASC').all(conversationId);
-          }
+          const resultMessages = await db.query('SELECT role, content FROM messages WHERE conversation_id = $1 ORDER BY timestamp ASC', [conversationId]);
+          const messagesFromDb = resultMessages.rows;
     
           const groqMessages = messagesFromDb.map(msg => ({ role: msg.role, content: msg.content }));
     
@@ -157,12 +130,9 @@ const startServer = async () => {
           const botMessage = groqData.choices[0]?.message?.content;
           if (!botMessage) { throw new Error("Struttura della risposta API di Groq non valida."); }
     
-          if (process.env.NODE_ENV === 'production') {
-              await db.query('INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)', [conversationId, 'assistant', botMessage]);
-          } else {
-              db.prepare('INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)').run(conversationId, 'assistant', botMessage);
-          }
+          await db.query('INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)', [conversationId, 'assistant', botMessage]);
     
+          await delay(DELAY_MS); // Apply delay before final response
           res.json({ botMessage: botMessage, conversationId: conversationId });
     
       } catch (error) {
