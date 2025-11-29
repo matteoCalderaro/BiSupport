@@ -212,9 +212,22 @@ const updateSendButtonState = () => {
     DOM.sendButton.disabled = !isTextareaContentValid;
 };
 
+// Funzione per gestire specificamente lo stato di "busy" dell'area input messaggi
+const setMessagingBusyState = (isBusy) => {
+    if (DOM.textarea) {
+        DOM.textarea.disabled = isBusy;
+    }
+    if (DOM.sendButton) {
+        DOM.sendButton.innerHTML = isBusy ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>' : 'Send';
+    }
+    // Note: sendButton.disabled is managed by updateSendButtonState based on textarea content
+};
+
 
 // --- Funzioni di Utilità SweetAlert2 ---
-const showCustomSwal = async ({ type, title, text, confirmButtonText, showCancelButton, icon, cancelButtonText }) => {
+// --- Funzioni di Utilità SweetAlert2 ---
+// Modificata per accettare tutte le opzioni di Swal.fire tramite restOptions
+const showCustomSwal = async ({ type, title, text, confirmButtonText, showCancelButton, icon, cancelButtonText, ...restOptions }) => {
     return await Swal.fire({
         icon: icon || type, // usa 'type' come icona di default se non specificato
         title: title,
@@ -227,8 +240,9 @@ const showCustomSwal = async ({ type, title, text, confirmButtonText, showCancel
             confirmButton: 'btn btn-primary',
             cancelButton: 'btn btn-light me-3'
         },
-        buttonsStyling: false, // Disabilita lo styling automatico per usare le customClass
-        reverseButtons: true, // Inverti l'ordine dei pulsanti
+        buttonsStyling: false,
+        reverseButtons: true,
+        ...restOptions // <--- Passa tutte le opzioni aggiuntive qui
     });
 };
 
@@ -251,17 +265,26 @@ const handleDeleteConversation = async (conversationId) => {
             // Rimuovi la conversazione dallo stato locale
             AppState.conversations = AppState.conversations.filter(c => c.id != conversationId);
             
-            // Se la conversazione eliminata era quella attiva, passa a una nuova chat
-            if (AppState.activeConversationId == conversationId) {
-                handleNewChat();
-            } else {
-                renderConversationsList(); // Altrimenti, aggiorna solo la lista
-            }
-            showCustomSwal({ // Success message
+
+            // Flag per determinare quale logica di rendering eseguire dopo la chiusura dello Swal
+            const wasActive = AppState.activeConversationId == conversationId;
+
+            // Mostra prima il messaggio di successo
+            await showCustomSwal({ // Messaggio di successo (awaiting qui per assicurarsi che sia visualizzato)
                 type: 'success',
                 title: 'Eliminata!',
                 text: 'La conversazione è stata eliminata con successo.',
+                showConfirmButton: false,
+                timer: 1500,
+                didClose: () => { 
+                    if (wasActive) {
+                        handleNewChat(); // Renderizzerà la nuova UI
+                    } else {
+                        renderConversationsList(); // Aggiorna solo la lista
+                    }
+                }
             });
+            
 
         } catch (error) {
             console.error("Errore durante l\'eliminazione:", error);
@@ -318,6 +341,8 @@ const handleRenameConversation = async (conversationId, currentTitle) => {
                 type: 'success',
                 title: 'Rinominata!',
                 text: 'La conversazione è stata rinominata con successo.',
+                showConfirmButton: false,
+                timer: 1500, 
             });
         } catch (error) {
             console.error("Errore durante la rinomina della conversazione:", error);
@@ -371,7 +396,6 @@ const selectConversation = async (conversationId) => {
 };
 
 const handleNewChat = () => {
-    if (AppState.isLoading) return;
     
     closeAllOpenDropdowns(); // <-- NEW: Close any open dropdowns before re-rendering
 
@@ -383,8 +407,12 @@ const handleNewChat = () => {
 };
 
 const handleMessaging = async (messageText) => {
+    // If global loading is active, prevent new messaging actions.
+    // Also prevent if message is empty after trim.
     if (AppState.isLoading || !messageText) return;
-    setLoadingState(true);
+
+    // Set messaging specific busy state (disables textarea, shows spinner)
+    setMessagingBusyState(true); 
 
     // Add user's message to state and render for immediate feedback (Optimistic Update)
     AppState.activeMessages.push({ role: 'user', content: messageText, timestamp: new Date().toISOString() });
@@ -414,7 +442,8 @@ const handleMessaging = async (messageText) => {
         console.error("Errore in handleMessaging:", error);
         AppState.activeMessages.push({ role: 'assistant', content: `Spiacente, si è verificato un errore: ${error.message}` });
     } finally {
-        setLoadingState(false);
+        // Clear messaging specific busy state (re-enables textarea, restores send button text)
+        setMessagingBusyState(false);
         renderMessages(); // Renderizza i messaggi aggiornati dallo stato
         renderConversationsList(); // Aggiorna per mostrare lo stato 'active' corretto e nuove conversazioni
     }
@@ -505,6 +534,10 @@ const initApp = async () => {
             title: 'Errore di Caricamento!',
             text: `Impossibile caricare la cronologia chat: ${error.message}`,
         });
+        // NOTA: Questo blocco catch non verrà attivato direttamente dai fallimenti di
+        // fetchConversations() perché attualmente quella funzione ritorna [] e non lancia errori.
+        // Se si desidera attivare questo popup per i fallimenti di fetchConversations(),
+        // fetchConversations() dovrebbe essere modificata per lanciare l'errore.
     } finally {
         setLoadingState(false);
     }
