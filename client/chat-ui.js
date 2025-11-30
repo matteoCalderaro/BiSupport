@@ -165,6 +165,19 @@ const renderConversationsList = () => {
 
 const renderMessages = () => {
     if (!DOM.messagesContainer) return;
+
+    if (DOM.chatCard) {
+        const welcomeMessage = DOM.chatCard.querySelector('#welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.classList.add('d-none');
+        }
+        const footer = DOM.chatCard.querySelector('#chat_card-footer');
+        if (footer) {
+            footer.classList.remove('footer-expanded');
+        }
+    }
+
+
     // Clear only if it's not currently building a streaming message
     if (!AppState.currentBotMessageElement) {
         DOM.messagesContainer.innerHTML = '';
@@ -187,7 +200,7 @@ const renderMessages = () => {
 
     if (AppState.activeMessages.length === 0 && AppState.activeConversationId === null && !AppState.currentBotMessageElement) {
         const welcomeMessage = "Ciao, sono il tuo consulente BI. Come posso aiutarti?";
-        DOM.messagesContainer.insertAdjacentHTML('beforeend', createIncomingMessageHTML(welcomeMessage));
+        DOM.messagesContainer.insertAdjacentHTML('beforeend', createWelcomeMessageHTML(welcomeMessage));
     }
     
     DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
@@ -433,6 +446,14 @@ const handleNewChat = () => {
     renderMessages();
     renderConversationsList();
     if (DOM.textarea) DOM.textarea.focus();
+
+    // Applica stili per la schermata di nuova chat vuota
+    if (DOM.chatCard) {
+        const footer = DOM.chatCard.querySelector('#chat_card-footer');
+        if (footer) {
+            footer.classList.add('footer-expanded');
+        }
+    }
 };
 
 // --- Funzioni Helper per la Creazione di Messaggi HTML ---
@@ -462,6 +483,19 @@ const handleMessaging = async (messageText) => {
 
     // Set messaging specific busy state (disables textarea, shows spinner)
     setMessagingBusyState(true); 
+
+    // Ripristina gli stili con animazione
+    
+    if (DOM.chatCard) {
+        const welcomeMessage = DOM.chatCard.querySelector('#welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.classList.add('d-none');
+        }
+        const footer = DOM.chatCard.querySelector('#chat_card-footer');
+        if (footer) {
+            footer.classList.remove('footer-expanded');
+        }
+    }
 
     // 1. Add user's message to state and render immediately (Optimistic Update)
     AppState.activeMessages.push({ role: 'user', content: messageText, timestamp: new Date().toISOString() });
@@ -661,6 +695,13 @@ const formatTimestamp = () => new Date().toLocaleTimeString('it-IT', { hour: '2-
 const createOutgoingMessageHTML = (message) => `
     <div class="d-flex justify-content-end mb-10">
         <div class="px-5 py-3 bg-message-out text-gray-900">${message}</div>
+    </div>`;
+
+const createWelcomeMessageHTML = (message) => `
+    <div id="welcome-message" class="d-flex justify-content-start mb-10 mt-auto">
+        <div class="d-flex fs-3 justify-content-center w-100 text-bisup">
+            <div class="rounded text-gray-900">${message}</div>
+        </div>
     </div>`;
 
 const createIncomingMessageHTML = (message) => {

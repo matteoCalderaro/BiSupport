@@ -58,6 +58,7 @@ body{
   background-color: var(--color-message-out) !important ;
   border-radius: 20px;
   border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 
@@ -96,7 +97,13 @@ body{
 #chat_card-footer {
     padding: 0;
     padding-bottom: 2.25rem;
-    /* border-top: 1px solid var(--color-light-gray); */
+    flex-shrink: 0; /* Impedisce al footer di restringersi se il contenuto è troppo grande */
+    flex-basis: 150px; /* Altezza di partenza (collassato) */
+    transition: flex-basis 0.5s ease-in-out; /* Anima la dimensione flex */
+}
+
+#chat_card-footer.footer-expanded {
+    flex-basis: 55%; /* Altezza quando espanso */
 }
 
 #chat_card-footer textarea {
