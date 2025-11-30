@@ -11,7 +11,9 @@
   padding: 0;
   box-sizing: border-box;
 }
-
+#chat_messages :not(:first-child){
+  font-size: 16px;
+}
 html, body {
   height: 100%; /* Ensure html and body take full viewport height */
   min-height: 100vh;
