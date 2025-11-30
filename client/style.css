@@ -329,7 +329,7 @@ body{
 
 .btn-icon-send:disabled {
   background-color: #c3c1c1 !important; /* Colore disabilitato (molto più chiaro) */
-  color: #000000; /* Colore icona disabilitata */
+  color: #6b6b6b; /* Colore icona disabilitata */
 }
 
 /* Stili specifici per il bottone Mic */
