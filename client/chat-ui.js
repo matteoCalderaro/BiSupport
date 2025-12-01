@@ -199,7 +199,7 @@ const renderMessages = () => {
     }
 
     if (AppState.activeMessages.length === 0 && AppState.activeConversationId === null && !AppState.currentBotMessageElement) {
-        const welcomeMessage = "Ciao, sono il tuo consulente BI. Come posso aiutarti?";
+        const welcomeMessage = "Ciao Matteo! Come posso aiutarti?";
         DOM.messagesContainer.insertAdjacentHTML('beforeend', createWelcomeMessageHTML(welcomeMessage));
     }
     
@@ -699,10 +699,8 @@ const createOutgoingMessageHTML = (message) => `
     </div>`;
 
 const createWelcomeMessageHTML = (message) => `
-    <div id="welcome-message" class="d-flex justify-content-start mb-10 mt-auto">
-        <div class="d-flex fs-3 justify-content-center w-100 text-bisup">
-            <div class="rounded text-gray-900">${message}</div>
-        </div>
+    <div id="welcome-message" class="d-flex justify-content-center w-100  mb-10 mt-auto">
+            <div class="fs-1 text-bisup">${message}</div>
     </div>`;
 
 const createIncomingMessageHTML = (message) => {
