@@ -526,7 +526,8 @@ const handleMessaging = async (messageText) => {
                 botFullMessage += chunk;
                 if (AppState.currentBotMessageElement) {
                     // Update content, keeping the cursor at the end
-                    AppState.currentBotMessageElement.innerHTML = botFullMessage + '<span class="streaming-cursor"></span>';
+                    const htmlContent = marked.parse(botFullMessage);
+                    AppState.currentBotMessageElement.innerHTML = htmlContent + '<span class="streaming-cursor"></span>';
                     DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
                 }
             },
@@ -705,8 +706,9 @@ const createWelcomeMessageHTML = (message) => `
     </div>`;
 
 const createIncomingMessageHTML = (message) => {
+    const htmlContent = marked.parse(message);
     // Chiama la funzione base con isStreaming: false per un messaggio normale
-    return _createBaseIncomingMessageHTML({ content: message, isStreaming: false });
+    return _createBaseIncomingMessageHTML({ content: htmlContent, isStreaming: false });
 };
 
 /**
