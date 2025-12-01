@@ -815,7 +815,7 @@ const createOutgoingMessageHTML = (message) => `
 
 const createWelcomeMessageHTML = (message) => `
     <div id="welcome-message" class="d-flex justify-content-center w-100  mb-10 mt-auto">
-            <div class="fs-1 text-bisup">${message}</div>
+            <div class="fs-2 text-bisup">${message}</div>
     </div>`;
 
 const createIncomingMessageHTML = (message) => {
