@@ -22,6 +22,7 @@ const DOM = {};
 const cacheDOMElements = () => {
     DOM.chatCard = document.querySelector('#chat_card');
     if (!DOM.chatCard) return false;
+    DOM.chatCardBody = DOM.chatCard.querySelector('#chat_card-body');
     DOM.messagesContainer = DOM.chatCard.querySelector('#chat_messages');
     DOM.textarea = DOM.chatCard.querySelector('[data-kt-element="input"]');
     DOM.sendButton = DOM.chatCard.querySelector('[data-kt-element="send"]');
@@ -33,6 +34,14 @@ const cacheDOMElements = () => {
     DOM.globalLoadingOverlay = document.querySelector('#global_loading_overlay');
     DOM.headerProgressBar = document.querySelector('#header_progress_bar');
     return true;
+};
+
+const scrollToBottom = () => {
+    if (DOM.chatCardBody) {
+        setTimeout(() => {
+            DOM.chatCardBody.scrollTo({ top: DOM.chatCardBody.scrollHeight, behavior: 'smooth' });
+        }, 100); // Small delay to allow DOM to update
+    }
 };
 
 // --- Speech Recognition ---
@@ -300,7 +309,7 @@ const renderMessages = () => {
         DOM.messagesContainer.insertAdjacentHTML('beforeend', createWelcomeMessageHTML(welcomeMessage));
     }
     
-    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+    scrollToBottom();
 };
 
 const setLoadingState = (isLoading) => {
@@ -569,7 +578,7 @@ const appendIncomingMessageHTML = (initialContent = '') => {
     
     DOM.messagesContainer.insertAdjacentHTML('beforeend', html);
     const newMessageElement = DOM.messagesContainer.querySelector(`[data-message-id="${messageId}"] .bot-message-content`);
-    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+    scrollToBottom();
     return newMessageElement;
 };
 
@@ -597,7 +606,7 @@ const handleMessaging = async (messageText) => {
     // 1. Add user's message to state and render immediately (Optimistic Update)
     AppState.activeMessages.push({ role: 'user', content: messageText, timestamp: new Date().toISOString() });
     DOM.messagesContainer.insertAdjacentHTML('beforeend', createOutgoingMessageHTML(messageText)); // Render user message immediately
-    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+    scrollToBottom();
 
     if (DOM.textarea) {
         DOM.textarea.value = '';
@@ -625,7 +634,7 @@ const handleMessaging = async (messageText) => {
                     // Update content, keeping the cursor at the end
                     const htmlContent = marked.parse(botFullMessage);
                     AppState.currentBotMessageElement.innerHTML = htmlContent + '<span class="streaming-cursor"></span>';
-                    DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+                    scrollToBottom();
                 }
             },
             onComplete: async () => {
@@ -672,7 +681,7 @@ const handleMessaging = async (messageText) => {
         updateSendButtonState(); // Ricalcola lo stato del bottone (disabilitandolo se la textarea è vuota)
         if (DOM.textarea) DOM.textarea.focus();
         // Ensure final scroll
-        DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+        scrollToBottom();
     }
 };
 
