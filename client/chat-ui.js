@@ -86,6 +86,7 @@ const setupSpeechRecognition = () => {
     AppState.recognition.onend = () => {
         AppState.isRecording = false;
         updateMicButtonState('idle');
+        DOM.textarea.focus(); // Assicura che la textarea abbia il focus
     };
 
     AppState.recognition.onerror = (event) => {
