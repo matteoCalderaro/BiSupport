@@ -12,6 +12,8 @@ const AppState = {
     activeMessages: [], // [{ role, content, timestamp }]
     isLoading: false,
     currentBotMessageElement: null, // Riferimento all'elemento del messaggio del bot attualmente in costruzione
+    isRecording: false, // Stato per il riconoscimento vocale
+    recognition: null,  // Istanza dell'API SpeechRecognition
 };
 
 // --- Cache degli elementi DOM ---
@@ -23,6 +25,7 @@ const cacheDOMElements = () => {
     DOM.messagesContainer = DOM.chatCard.querySelector('#chat_messages');
     DOM.textarea = DOM.chatCard.querySelector('[data-kt-element="input"]');
     DOM.sendButton = DOM.chatCard.querySelector('[data-kt-element="send"]');
+    DOM.micButton = DOM.chatCard.querySelector('.btn-icon-mic'); // Aggiunto bottone microfono
     DOM.newChatButton = document.querySelector('#new_chat_button');
     DOM.conversationsList = document.querySelector('#conversations_list');
     DOM.toggleConversationsContainer = document.querySelector('.toggle_conversations_container');
@@ -31,6 +34,99 @@ const cacheDOMElements = () => {
     DOM.headerProgressBar = document.querySelector('#header_progress_bar');
     return true;
 };
+
+// --- Speech Recognition ---
+const updateMicButtonState = (state) => {
+    if (!DOM.micButton) return;
+
+    // Rimuovi tutte le classi di stato e icone specifiche
+    DOM.micButton.classList.remove('recording', 'disabled-mic');
+    const icon = DOM.micButton.querySelector('i');
+    icon.classList.remove('bi-mic-fill', 'bi-stop-circle-fill', 'bi-mic-mute-fill');
+
+    switch (state) {
+        case 'recording':
+            DOM.micButton.classList.add('recording');
+            icon.classList.add('bi-stop-circle-fill'); // Icona per fermare
+            DOM.micButton.title = 'Ferma registrazione';
+            break;
+        case 'disabled':
+            DOM.micButton.classList.add('disabled-mic');
+            icon.classList.add('bi-mic-mute-fill'); // Icona per microfono non disponibile/disabilitato
+            DOM.micButton.title = 'Riconoscimento vocale non disponibile';
+            break;
+        case 'idle':
+        default:
+            icon.classList.add('bi-mic-fill'); // Icona di default
+            DOM.micButton.title = 'Avvia registrazione vocale';
+            break;
+    }
+};
+
+const setupSpeechRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        updateMicButtonState('disabled');
+        console.warn("Speech Recognition API non è supportata da questo browser.");
+        return;
+    }
+
+    AppState.recognition = new SpeechRecognition();
+    AppState.recognition.lang = 'it-IT';
+    AppState.recognition.continuous = false; // Ferma il riconoscimento dopo una pausa
+    AppState.recognition.interimResults = true; // Mostra risultati provvisori durante la dettatura
+
+    // --- Gestori di eventi per il riconoscimento vocale ---
+
+    AppState.recognition.onstart = () => {
+        AppState.isRecording = true;
+        updateMicButtonState('recording');
+    };
+
+    AppState.recognition.onend = () => {
+        AppState.isRecording = false;
+        updateMicButtonState('idle');
+    };
+
+    AppState.recognition.onerror = (event) => {
+        console.error("Errore di riconoscimento vocale:", event.error);
+        let errorMessage = 'Si è verificato un errore durante la registrazione.';
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            errorMessage = 'Accesso al microfono negato. Controlla le autorizzazioni del browser.';
+        } else if (event.error === 'no-speech') {
+            errorMessage = 'Nessun discorso rilevato. Prova a parlare più chiaramente.';
+        }
+        showCustomSwal({
+            icon: 'error',
+            title: 'Errore Registrazione',
+            text: errorMessage,
+        });
+    };
+
+    AppState.recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+
+        // Mostra il testo finale o quello provvisorio
+        DOM.textarea.value = finalTranscript || interimTranscript;
+        
+        // Aggiorna lo stato del bottone Invia e ridimensiona la textarea
+        updateSendButtonState();
+        autoResizeTextarea(DOM.textarea);
+    };
+
+    updateMicButtonState('idle'); // Imposta lo stato iniziale del bottone
+};
+
+
 
 // --- Funzioni di Utilità per Dropdown Conversazioni ---
 const setupConversationItemDropdown = (item) => {
@@ -643,6 +739,23 @@ const setupEventListeners = () => {
         handleMessaging(DOM.textarea.value.trim());
     });
 
+    if (DOM.micButton) {
+        DOM.micButton.addEventListener('click', () => {
+            if (!AppState.recognition) return; // Se l'API non è supportata, non fare nulla
+
+            if (AppState.isRecording) {
+                AppState.recognition.stop();
+            } else {
+                try {
+                    AppState.recognition.start();
+                } catch (e) {
+                    console.error("Errore all'avvio del riconoscimento vocale:", e);
+                    updateMicButtonState('idle');
+                }
+            }
+        });
+    }
+
     DOM.newChatButton.addEventListener('click', handleNewChat);
 
     if (DOM.toggleConversationsContainer && DOM.conversationContainer) { // Ensure elements exist
@@ -664,6 +777,7 @@ const setupEventListeners = () => {
 const initApp = async () => {
     if (!cacheDOMElements()) return;
     setupEventListeners();
+    setupSpeechRecognition(); // Inizializza l'API Speech Recognition
     
     setLoadingState(true);
     try {

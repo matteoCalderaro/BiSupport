@@ -322,6 +322,8 @@ body{
   display: flex;
   justify-content: center;
   align-items: center;
+  align-self: center; /* Centra verticalmente il bottone nel suo container flex */
+  position: relative; /* Contesto per il posizionamento assoluto dell'icona */
   padding: 0; /* Rimuovi padding interno di default */
   border: none;
   transition: background-color 0.3s ease; /* Transizione fluida */
@@ -352,6 +354,37 @@ body{
   background-color: #f0f0f0 !important; /* Sfondo grigio chiaro all'hover */
 }
 
+/* Stili per il bottone Mic in stato di registrazione */
+.btn-icon-mic.recording {
+  background-color: #dc3545 !important; /* Colore rosso per indicare la registrazione */
+  color: white !important; /* Icona bianca */
+  animation: pulse-mic 1.5s infinite; /* Animazione pulsante */
+}
+
+.btn-icon-mic.recording i {
+  color: white !important;
+}
+
+/* Stili per il bottone Mic in stato disabilitato */
+.btn-icon-mic.disabled-mic {
+  background-color: #e9ecef !important; /* Sfondo grigio chiaro per disabilitato */
+  color: #6c757d !important; /* Grigio per icona */
+  cursor: not-allowed;
+}
+
+/* Animazione pulsante per il microfono in registrazione */
+@keyframes pulse-mic {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); /* Rosso semitrasparente */
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); /* Dimensione massima, trasparente */
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
 .btn-icon-send .arrow-icon,
 .btn-icon-send .spinner-icon {
   display: flex;
@@ -359,9 +392,14 @@ body{
   align-items: center;
 }
 
-.btn-icon-send .arrow-icon i,
-.btn-icon-mic i {
+#chat_card-footer .btn-icon-send .arrow-icon i,
+#chat_card-footer .btn-icon-mic i {
   font-size: 1.75rem; /* Dimensione icona */
+  position: absolute;
+  display: inline-flex;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .btn-icon-send .spinner-icon .spinner-border {
