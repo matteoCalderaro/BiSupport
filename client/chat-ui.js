@@ -840,9 +840,9 @@ const _createBaseIncomingMessageHTML = ({ content = '', isStreaming = false, mes
 
     return `
         <div class="d-flex justify-content-start mb-10" ${messageIdAttr}>
-            <div class="d-flex flex-column align-items-start">
+            <div class="d-flex flex-column align-items-start w-100">
                 <span class="fs-5 fw-bold text-bisup mb-1">BiChat</span>
-                <div class="rounded text-gray-900 ${contentClass}">${content}${streamingCursor}</div>
+                <div class="w-100 rounded text-gray-900 ${contentClass}">${content}${streamingCursor}</div>
             </div>
         </div>`;
 };
