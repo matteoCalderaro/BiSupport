@@ -1,10 +1,12 @@
 // server/index.js
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const { initializeDatabase, getDb } = require('./database');
 
 const app = express();
+app.use(cors());
 const port = process.env.PORT || 3000;
 
 // --- Configurable Delay for Debugging ---
