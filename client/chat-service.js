@@ -3,7 +3,28 @@
  * @description Service layer per la comunicazione con il backend Node.js.
  */
 
-const API_URL = "/api"; // Base URL per le nostre API
+// Determina l'URL dell'API in base all'ambiente
+const getApiUrl = () => {
+    // L'URL di produzione del backend è una costante
+    const PROD_API_URL = 'https://bichat-app.onrender.com/api';
+
+    // 1. Se il frontend è servito dallo stesso dominio del backend (caso Render), usa il percorso relativo.
+    if (window.location.origin === 'https://bichat-app.onrender.com') {
+        return '/api';
+    }
+
+    // 2. Per lo sviluppo locale, usa il percorso relativo.
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return PROD_API_URL;
+        //return '/api';
+    }
+
+    // 3. In tutti gli altri casi (es. il frontend copiato in un progetto .NET e deployato su un altro dominio),
+    //    usa l'URL assoluto come fallback.
+    return PROD_API_URL;
+};
+
+const API_URL = getApiUrl(); // Base URL dinamica per le nostre API
 
 /**
  * Recupera la lista di tutte le conversazioni.
